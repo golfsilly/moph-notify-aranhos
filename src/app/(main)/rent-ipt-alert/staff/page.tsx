@@ -1,4 +1,4 @@
-import { sendRentIptIntern } from "@/app/api/rent-ipt-alert/rent-ipt-intern/route";
+import { sendRentIptStaff } from "@/app/api/rent-ipt-alert/rent-ipt-staff/route";
 
 type RentIptRow = {
   doctor: string;
@@ -6,7 +6,7 @@ type RentIptRow = {
 };
 
 export default async function RentIptAlertPage() {
-  const data: RentIptRow[] = await sendRentIptIntern();
+  const data: RentIptRow[] = await sendRentIptStaff();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 p-6">
@@ -14,7 +14,7 @@ export default async function RentIptAlertPage() {
         {/* Header */}
         <div className="mb-6 rounded-2xl border bg-white p-6 shadow-sm">
           <h1 className="text-3xl font-bold tracking-tight text-slate-800">
-            รายงานสรุปชาร์ทค้าง แพทย์ใช้ทุน
+            รายงานสรุปชาร์ทค้าง Staff
           </h1>
 
           <p className="mt-2 text-sm text-slate-500">

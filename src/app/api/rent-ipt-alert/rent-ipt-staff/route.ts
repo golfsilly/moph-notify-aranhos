@@ -80,26 +80,26 @@ function buildSql(startDate: string, endDate: string) {
 
   return `
     SELECT
-      ou.NAME AS doctor,
+      ou.name AS doctor,
       CAST(COUNT(*) AS UNSIGNED) AS total_rent
 
-    FROM ipdrent o
+    FROM
+      ipdrent o
 
-    LEFT JOIN opduser ou
-      ON ou.loginname = o.rent_user
+      LEFT JOIN opduser ou
+        ON ou.loginname = o.rent_user
 
     WHERE
-      o.rent_date
-      BETWEEN '${startDate}'
+      o.rent_date BETWEEN '${startDate}'
       AND '${endDate}'
       AND o.checkin = 'N'
-      AND o.rent_user IN (${users})
+      AND o.rent_user NOT IN (${users})
 
     GROUP BY
       o.rent_user,
-      ou.NAME
+      ou.name
 
-    ORDER BY 
+    ORDER BY
       total_rent DESC;
   `;
 }
@@ -110,7 +110,7 @@ function createMessage(
   startDate: string,
   endDate: string,
 ) {
-  let text = `📊 รายงานชาร์ทค้างสรุป แพทย์ใช้ทุน
+  let text = `📊 รายงานชาร์ทค้างสรุป Staff
 📅 ประจำวันที่: ${formatThaiShort(today)}
 ช่วง: ${formatThaiShort(startDate)} ถึง ${formatThaiShort(endDate)}
 
@@ -150,7 +150,7 @@ async function sendNotify(message: string) {
   }
 }
 
-export async function sendRentIptIntern() {
+export async function sendRentIptStaff() {
   const { today, startDate, endDate } = getDateRange();
   const sql = buildSql(startDate, endDate);
   const data = await queryHos<RentSummary[]>(sql);
@@ -189,7 +189,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const result = await sendRentIptIntern();
+    const result = await sendRentIptStaff();
 
     return NextResponse.json({
       success: true,
@@ -217,4 +217,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

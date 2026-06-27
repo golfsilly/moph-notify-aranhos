@@ -3,17 +3,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { RentIptRow } from "./type";
 
-export function useRentIptAlertAll() {
+export function useRentIptAlertStaff() {
   return useQuery({
-    queryKey: ["rent-ipt-alert-all"],
+    queryKey: ["rent-ipt-alert-staff"],
     queryFn: async (): Promise<RentIptRow[]> => {
-      const res = await fetch("/api/rent-ipt-alert/all");
+      const res = await fetch("/api/rent-ipt-alert/rent-ipt-staff");
       if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
       return res.json();
     },
     refetchOnWindowFocus: false,
     refetchOnMount: true,
-    staleTime: 10 * 60 * 1000,   // 10 นาที
+    staleTime: 10 * 60 * 1000, // 10 นาที
     gcTime: 15 * 60 * 1000,
   });
 }
@@ -22,13 +22,13 @@ export function useRentIptAlertIntern() {
   return useQuery({
     queryKey: ["rent-ipt-alert-intern"],
     queryFn: async (): Promise<RentIptRow[]> => {
-      const res = await fetch("/api/rent-ipt-alert/intern");
+      const res = await fetch("/api/rent-ipt-alert/rent-ipt-intern");
       if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
       return res.json();
     },
     refetchOnWindowFocus: false,
     refetchOnMount: true,
-    staleTime: 10 * 60 * 1000,   // 10 นาที
+    staleTime: 10 * 60 * 1000, // 10 นาที
     gcTime: 15 * 60 * 1000,
   });
 }

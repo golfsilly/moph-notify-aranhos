@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import {
-  startCronRentIptAll,
-  startCronRentIptIntern,
-  startCronTest,
-} from "@/lib/cron";
 import { APP_CONFIG } from "@/config/app-config";
 import { sarabun } from "@/config/fonts";
+import { ProvidersReactQuery } from "@/provider/react-query-provider";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_CONFIG.hospital.website),
@@ -32,22 +28,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // if (process.env.NODE_ENV === "production") {
-  //   startCronRentIptAll();
-  //   startCronRentIptIntern();
-  // }
-  
-  if (process.env.NODE_ENV === "development") {
-    startCronTest();
-  }
-
   return (
     <html
       lang="th"
       suppressHydrationWarning
       className={`$${sarabun.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ProvidersReactQuery>{children}</ProvidersReactQuery>
+      </body>
     </html>
   );
 }

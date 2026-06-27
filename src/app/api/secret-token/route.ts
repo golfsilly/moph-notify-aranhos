@@ -150,7 +150,7 @@ async function sendNotify(message: string) {
   }
 }
 
-export async function sendRentIptIntern() {
+async function sendRentIptAlert() {
   const { today, startDate, endDate } = getDateRange();
   const sql = buildSql(startDate, endDate);
   const data = await queryHos<RentSummary[]>(sql);
@@ -189,7 +189,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const result = await sendRentIptIntern();
+    const result = await sendRentIptAlert();
 
     return NextResponse.json({
       success: true,
@@ -217,4 +217,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

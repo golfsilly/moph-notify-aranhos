@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.1",
-    "@upstash/ratelimit": "^2.0.8",
-    "@upstash/redis": "^1.38.0",
     "mysql2": "^3.22.5",
     "next": "16.2.9",
     "node-cron": "^4.5.0",

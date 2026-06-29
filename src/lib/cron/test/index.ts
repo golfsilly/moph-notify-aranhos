@@ -27,7 +27,7 @@ export function startCronTest() {
           process.env.NEXT_PUBLIC_APP_URL ||
           (process.env.VERCEL_URL
             ? `https://${process.env.VERCEL_URL}`
-            : "http://localhost:3300");
+            : "http://localhost:50000");
 
         const url = `${baseUrl}/api/secret-token`;
 

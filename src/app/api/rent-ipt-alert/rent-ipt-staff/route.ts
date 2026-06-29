@@ -2,14 +2,37 @@ import { NextResponse } from "next/server";
 import { queryHos } from "@/lib/hosdb";
 
 const RENT_USERS = [
-  "Kanokporn_s",
-  "chalisa",
-  "Sorarath",
-  "84170",
-  "9568",
-  "82505",
-  "83371",
-  "83382",
+  "rachade",
+  "สรวิศ",
+  "ธนา",
+  "ชญานัสถ์",
+  "ธีรพล",
+  "อรสิรี",
+  "รสสุคนธ์",
+  "sukanya",
+  "aaa",
+  "อภิชัย",
+  "นนท์",
+  "ต้อม",
+  "d44918",
+  "siriwan",
+  "54680",
+  "ศศิวิมล",
+  "52233",
+  "onndar",
+  "paron",
+  "56783",
+  "chonlatee",
+  "59885",
+  "d48218",
+  "fasai",
+  "Suthinee",
+  "d54544",
+  "Wisarut",
+  "ฐานุปัติ",
+  "onco",
+  "สมภพ",
+  "อุดม",
 ];
 
 interface RentSummary {
@@ -32,8 +55,8 @@ function getEnv(name: string): string {
 const CONFIG = {
   startDate: "2026-05-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
-  clientKey: getEnv("MORPROM_CLIENT_KEY"),
-  secretKey: getEnv("MORPROM_SECRET_KEY"),
+  clientKey: getEnv("LINE_NOTIFY_TEST_CLIENT_KEY"),
+  secretKey: getEnv("LINE_NOTIFY_TEST_SECRET_KEY"),
 };
 
 function getThaiTime() {
@@ -74,33 +97,55 @@ function getDateRange(): {
 }
 
 function buildSql(startDate: string, endDate: string) {
-  const users = RENT_USERS.map((user) => `'${user}'`)
-
-    .join(",");
-
   return `
-    SELECT
-      ou.name AS doctor,
-      CAST(COUNT(*) AS UNSIGNED) AS total_rent
-
-    FROM
-      ipdrent o
-
-      LEFT JOIN opduser ou
-        ON ou.loginname = o.rent_user
-
-    WHERE
-      o.rent_date BETWEEN '${startDate}'
-      AND '${endDate}'
-      AND o.checkin = 'N'
-      AND o.rent_user NOT IN (${users})
-
-    GROUP BY
-      o.rent_user,
-      ou.name
-
-    ORDER BY
-      total_rent DESC;
+SELECT
+	ou.NAME AS doctor,
+	CAST( COUNT(*) AS UNSIGNED ) AS total_rent 
+FROM
+	ipdrent o
+	LEFT JOIN opduser ou ON ou.loginname = o.rent_user 
+WHERE
+	o.rent_date       BETWEEN '${startDate}'
+      AND '${endDate}' 
+	AND o.checkin = 'N' 
+	AND o.rent_user IN (
+		'rachade',
+		'สรวิศ',
+		'ธนา',
+		'ชญานัสถ์',
+		'ธีรพล',
+		'อรสิรี',
+		'รสสุคนธ์',
+		'sukanya',
+		'aaa',
+		'อภิชัย',
+		'นนท์',
+		'ต้อม',
+		'd44918',
+		'siriwan',
+		'54680',
+		'ศศิวิมล',
+		'52233',
+		'onndar',
+		'paron',
+		'56783',
+		'chonlatee',
+		'59885',
+		'd48218',
+		'fasai',
+		'Suthinee',
+		'd54544',
+		'Wisarut',
+		'ฐานุปัติ',
+		'onco',
+		'สมภพ',
+		'อุดม' 
+	) 
+GROUP BY
+	o.rent_user,
+	ou.NAME 
+ORDER BY
+	total_rent DESC;
   `;
 }
 

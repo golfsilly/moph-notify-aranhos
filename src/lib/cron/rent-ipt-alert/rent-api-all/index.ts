@@ -1,21 +1,21 @@
 import cron from "node-cron";
 
 declare global {
-  var rentIptInternCronStarted: boolean | undefined;
+  var rentIptAllCronStarted: boolean | undefined;
 }
 
 const SECRET_TOKEN = process.env.LINE_NOTIFY_SECRET!;
 
-export function startCronRentIptIntern() {
+export function startCronRentIptAll() {
   if (!SECRET_TOKEN) {
     throw new Error("LINE_NOTIFY_SECRET is missing");
   }
 
-  if (global.rentIptInternCronStarted) {
+  if (global.rentIptAllCronStarted) {
     return;
   }
 
-  global.rentIptInternCronStarted = true;
+  global.rentIptAllCronStarted = true;
 
   cron.schedule(
     "0 9 * * *",
@@ -29,7 +29,7 @@ export function startCronRentIptIntern() {
             ? `https://${process.env.VERCEL_URL}`
             : "http://localhost:50000");
 
-        const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-intern`;
+        const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-all`;
 
         const res = await fetch(url, {
           method: "GET",
@@ -45,7 +45,7 @@ export function startCronRentIptIntern() {
         }
 
         console.log(
-          "✅ ส่งรายงาน RentIptIntern สำเร็จ:",
+          "✅ ส่งรายงาน RentIptAll สำเร็จ:",
           data.meta.count,
           "รายการ",
         );
@@ -59,6 +59,6 @@ export function startCronRentIptIntern() {
   );
 
   console.log(
-    "✅ Rent Ipt Intern สำหรับส่ง LINE Notify ทุกวัน 09:00 เริ่มทำงานแล้ว",
+    "✅ Rent Ipt All สำหรับส่ง LINE Notify ทุกวัน 09:00 เริ่มทำงานแล้ว",
   );
 }

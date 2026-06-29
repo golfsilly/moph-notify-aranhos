@@ -1,17 +1,6 @@
 import { NextResponse } from "next/server";
 import { queryHos } from "@/lib/hosdb";
 
-const RENT_USERS = [
-  "Kanokporn_s",
-  "chalisa",
-  "Sorarath",
-  "84170",
-  "9568",
-  "82505",
-  "83371",
-  "83382",
-];
-
 interface RentSummary {
   doctor: string;
   total_rent: number;
@@ -74,10 +63,6 @@ function getDateRange(): {
 }
 
 function buildSql(startDate: string, endDate: string) {
-  const users = RENT_USERS.map((user) => `'${user}'`)
-
-    .join(",");
-
   return `
     SELECT
       ou.NAME AS doctor,
@@ -93,7 +78,6 @@ function buildSql(startDate: string, endDate: string) {
       BETWEEN '${startDate}'
       AND '${endDate}'
       AND o.checkin = 'N'
-      AND o.rent_user NOT IN (${users})
 
     GROUP BY
       o.rent_user,
@@ -110,7 +94,7 @@ function createMessage(
   startDate: string,
   endDate: string,
 ) {
-  let text = `📊 รายงานชาร์ทค้างสรุป แพทย์ใช้ทุน
+  let text = `📊 รายงานชาร์ทค้างสรุปทั้งหมด
 📅 ประจำวันที่: ${formatThaiShort(today)}
 ช่วง: ${formatThaiShort(startDate)} ถึง ${formatThaiShort(endDate)}
 
@@ -150,7 +134,7 @@ async function sendNotify(message: string) {
   }
 }
 
-async function sendRentIptAlert() {
+export async function sendRentIptAll() {
   const { today, startDate, endDate } = getDateRange();
   const sql = buildSql(startDate, endDate);
   const data = await queryHos<RentSummary[]>(sql);
@@ -189,7 +173,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const result = await sendRentIptAlert();
+    const result = await sendRentIptAll();
 
     return NextResponse.json({
       success: true,
@@ -217,3 +201,4 @@ export async function GET(request: Request) {
     );
   }
 }
+

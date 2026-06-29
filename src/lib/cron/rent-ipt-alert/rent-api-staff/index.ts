@@ -27,7 +27,7 @@ export function startCronRentIptStaff() {
           process.env.NEXT_PUBLIC_APP_URL ||
           (process.env.VERCEL_URL
             ? `https://${process.env.VERCEL_URL}`
-            : "http://localhost:3300");
+            : "http://localhost:50000");
 
         const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-staff`;
 
@@ -59,6 +59,6 @@ export function startCronRentIptStaff() {
   );
 
   console.log(
-    "✅ Rent Ipt Staff สำหรับส่ง LINE Notify ทุกวัน 16:00 เริ่มทำงานแล้ว",
+    "✅ Rent Ipt Staff สำหรับส่ง LINE Notify ทุกวัน 09:00 เริ่มทำงานแล้ว",
   );
 }

@@ -27,7 +27,7 @@ const poolConfig: PoolOptions = {
 
   connectTimeout: 10000,
 
-  charset: "utf8mb4",
+  charset: "tis620",
 };
 
 const hosPool: Pool = mysql.createPool(poolConfig);

@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "moph-notify-aranhos",
 
-      script: "npm",
+      script: "./next/standalone/server.js",
 
       args: "start",
 

@@ -32,8 +32,8 @@ function getEnv(name: string): string {
 const CONFIG = {
   startDate: "2026-05-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
-  clientKey: getEnv("MORPROM_CLIENT_KEY"),
-  secretKey: getEnv("MORPROM_SECRET_KEY"),
+  clientKey: getEnv("LINE_NOTIFY_TEST_CLIENT_KEY"),
+  secretKey: getEnv("LINE_NOTIFY_TEST_SECRET_KEY"),
 };
 
 function getThaiTime() {
@@ -110,7 +110,7 @@ function createMessage(
   startDate: string,
   endDate: string,
 ) {
-  let text = `📊 รายงานชาร์ทค้างสรุป แพทย์ใช้ทุน
+  let text = `📊 รายงานชาร์ทค้างสรุป แพทย์ปี 1
 📅 ประจำวันที่: ${formatThaiShort(today)}
 ช่วง: ${formatThaiShort(startDate)} ถึง ${formatThaiShort(endDate)}
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { queryHos } from "@/lib/hosdb";
+import { ENV } from "@/config/env";
 
 const RENT_USERS = [
   "rachade",
@@ -40,23 +41,13 @@ interface RentSummary {
   total_rent: number;
 }
 
-const SECRET_TOKEN = process.env.CRON_SECRET_TOKEN;
-
-function getEnv(name: string): string {
-  const value = process.env[name];
-
-  if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`${name} is missing`);
-  }
-
-  return value;
-}
+const SECRET_TOKEN = ENV.cronToken;
 
 const CONFIG = {
   startDate: "2026-05-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
-  clientKey: getEnv("LINE_NOTIFY_TEST_CLIENT_KEY"),
-  secretKey: getEnv("LINE_NOTIFY_TEST_SECRET_KEY"),
+  clientKey: ENV.lineNotifyTestClientKey,
+  secretKey: ENV.lineNotifyTestSecretKey,
 };
 
 function getThaiTime() {

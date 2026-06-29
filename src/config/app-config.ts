@@ -1,4 +1,5 @@
 import packageJson from "../../package.json";
+import { ENV } from "./env";
 
 const currentYear = new Date().getFullYear();
 
@@ -61,7 +62,7 @@ export const APP_CONFIG: AppConfig = {
   },
   api: {
     baseUrl:
-      process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.4.30:50000/api/",
+      ENV.appUrl ?? "http://192.168.4.30:50000/api/",
   },
   seo: {
     title: "MOPH NOTIFY ARANHOS",

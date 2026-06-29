@@ -1,10 +1,11 @@
+import { ENV } from "@/config/env";
 import cron from "node-cron";
 
 declare global {
   var rentIptAllCronStarted: boolean | undefined;
 }
 
-const SECRET_TOKEN = process.env.CRON_SECRET_TOKEN!;
+const SECRET_TOKEN = ENV.cronToken;
 
 export function startCronRentIptAll() {
   if (!SECRET_TOKEN) {
@@ -24,10 +25,7 @@ export function startCronRentIptAll() {
 
       try {
         const baseUrl =
-          process.env.NEXT_PUBLIC_APP_URL ||
-          (process.env.VERCEL_URL
-            ? `https://${process.env.VERCEL_URL}`
-            : "http://localhost:50000");
+          ENV.appUrl || "http://localhost:50000";
 
         const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-all`;
 

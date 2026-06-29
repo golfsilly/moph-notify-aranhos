@@ -1,15 +1,16 @@
+import { ENV } from './../config/env';
 import mysql, { Pool, PoolOptions, RowDataPacket } from "mysql2/promise";
 
 const poolConfig: PoolOptions = {
-  host: process.env.HOS_DB_HOST || "",
+  host: ENV.db.host || "",
 
-  user: process.env.HOS_DB_USER || "",
+  user: ENV.db.user || "",
 
-  password: process.env.HOS_DB_PASS || "",
+  password: ENV.db.pass || "",
 
-  database: process.env.HOS_DB_NAME || "",
+  database: ENV.db.name || "",
 
-  port: Number(process.env.HOS_DB_PORT) || 3306,
+  port: Number(ENV.db.port) || 3306,
 
   waitForConnections: true,
 
@@ -58,9 +59,7 @@ if (HOS_ENABLED) {
 
 export async function queryHos<T = RowDataPacket[]>(
   sql: string,
-
   params: any[] = [],
-
   retries = 2,
 ): Promise<T> {
   for (let attempt = 0; attempt <= retries; attempt++) {

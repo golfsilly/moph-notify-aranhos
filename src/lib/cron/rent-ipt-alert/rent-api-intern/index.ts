@@ -4,11 +4,11 @@ declare global {
   var rentIptInternCronStarted: boolean | undefined;
 }
 
-const SECRET_TOKEN = process.env.LINE_NOTIFY_SECRET!;
+const SECRET_TOKEN = process.env.CRON_SECRET_TOKEN!;
 
 export function startCronRentIptIntern() {
   if (!SECRET_TOKEN) {
-    throw new Error("LINE_NOTIFY_SECRET is missing");
+    throw new Error("CRON_SECRET_TOKEN is missing");
   }
 
   if (global.rentIptInternCronStarted) {

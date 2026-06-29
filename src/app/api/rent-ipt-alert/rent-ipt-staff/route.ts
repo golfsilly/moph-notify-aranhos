@@ -40,7 +40,7 @@ interface RentSummary {
   total_rent: number;
 }
 
-const SECRET_TOKEN = process.env.LINE_NOTIFY_SECRET;
+const SECRET_TOKEN = process.env.CRON_SECRET_TOKEN;
 
 function getEnv(name: string): string {
   const value = process.env[name];
@@ -214,7 +214,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "LINE_NOTIFY_SECRET is missing",
+          error: "CRON_SECRET_TOKEN is missing",
         },
         {
           status: 500,

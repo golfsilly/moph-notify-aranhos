@@ -2,12 +2,47 @@ import packageJson from "../../package.json";
 
 const currentYear = new Date().getFullYear();
 
-export const APP_CONFIG = {
+export interface MultiLang {
+  readonly th: string;
+  readonly en: string;
+}
+
+export interface AppConfig {
+  readonly app: {
+    readonly name: MultiLang;
+    readonly shortName: string;
+    readonly version: string;
+  };
+  readonly hospital: {
+    readonly name: MultiLang;
+    readonly shortName: string;
+    readonly hospcode5: string;
+    readonly hospcode9: string;
+    readonly zone: string;
+    readonly website: string;
+    readonly email: string;
+    readonly phone: string;
+    readonly facebook: string;
+  };
+  readonly api: {
+    readonly baseUrl: string;
+  };
+  readonly seo: {
+    readonly title: string;
+    readonly description: string;
+    readonly image: string;
+    readonly keywords: readonly string[];
+  };
+  readonly copyright: string;
+}
+
+export const APP_CONFIG: AppConfig = {
   app: {
     name: {
       th: "MOPH NOTIFY ARANHOS",
       en: "MOPH NOTIFY ARANHOS",
     },
+    shortName: "NTF",
     version: packageJson.version,
   },
   hospital: {
@@ -16,13 +51,22 @@ export const APP_CONFIG = {
       en: "Aranyaprathet Hospital",
     },
     shortName: "ARH",
+    hospcode5: "10870",
+    hospcode9: "EA0010870",
+    zone: "6",
     website: "https://aranhos.moph.go.th",
     email: "aranyaprathethospital@gmail.com",
+    phone: "037-233-033",
     facebook: "https://www.facebook.com/aran.hosp",
+  },
+  api: {
+    baseUrl:
+      process.env.NEXT_PUBLIC_API_URL ?? "http://192.168.4.30:50000/api/",
   },
   seo: {
     title: "MOPH NOTIFY ARANHOS",
     description: "MOPH NOTIFY ARANHOS",
+    image: "/images/logo-aranhos.png",
     keywords: [
       "MOPH",
       "NOTIFY",
@@ -30,7 +74,6 @@ export const APP_CONFIG = {
       "Aranyaprathet",
       "โรงพยาบาลอรัญประเทศ",
     ] satisfies string[],
-    image: "/images/logo-aranhos.png",
   },
   copyright: `© ${currentYear}, Aranyaprathet Hospital.`,
 } as const;

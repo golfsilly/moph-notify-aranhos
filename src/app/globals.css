@@ -1,285 +1,109 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+:root {
+  /* 🟩 Light Mode - Emerald Theme */
+  --background: #f8fafc;           /* ใช้เทาอมฟ้าอ่อนมากเพื่อความสะอาดตา */
+  --foreground: #022c22;           /* เขียวเข้มจัดสำหรับข้อความหลัก */
+  
+  --card: #ffffff;
+  --card-foreground: #022c22;
+  
+  --popover: #ffffff;
+  --popover-foreground: #022c22;
+  
+  --primary: #10b981;              /* Emerald 500 */
+  --primary-foreground: #ffffff;    /* ตัวหนังสือบนปุ่ม primary เป็นสีขาว */
+  
+  --secondary: #f0fdf4;            /* เขียวอ่อนสำหรับปุ่มรอง */
+  --secondary-foreground: #15803d; /* ข้อความบนปุ่มรอง */
+  
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  
+  --accent: #f59e0b;               /* ส้มอมเหลืองสำหรับจุดเด่น/แจ้งเตือน */
+  --accent-foreground: #ffffff;
+  
+  --destructive: #ef4444;          /* แดงสำหรับปุ่มลบ/อันตราย */
+  --destructive-foreground: #ffffff;
+  
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #10b981;                 /* วงแหวน Focus ใช้สีหลัก */
+  
+  --radius: 0.5rem;
+}
 
-/* ── 🎨 THEME CONFIGURATION (TAILWIND V4) ────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* ⬛ Dark Mode - Emerald Theme */
+    --background: #022c22;         /* เขียวเข้มมืดจัด */
+    --foreground: #f0fdf4;         /* ตัวหนังสือสีเขียวอ่อนมาก */
+    
+    --card: #064e3b;               /* การ์ดยกขึ้นมาให้สว่างกว่าพื้นหลังเล็กน้อย */
+    --card-foreground: #f0fdf4;
+    
+    --popover: #064e3b;
+    --popover-foreground: #f0fdf4;
+    
+    --primary: #34d399;            /* Emerald 400 สว่างขึ้นในโหมดมืด */
+    --primary-foreground: #022c22;  /* ตัวหนังสือบนปุ่ม primary โหมดมืดเป็นเขียวเข้ม */
+    
+    --secondary: #064e3b;
+    --secondary-foreground: #f0fdf4;
+    
+    --muted: #064e3b;
+    --muted-foreground: #a1a1aa;
+    
+    --accent: #fbbf24;
+    --accent-foreground: #022c22;
+    
+    --destructive: #7f1d1d;
+    --destructive-foreground: #fef2f2;
+    
+    --border: #064e3b;
+    --input: #064e3b;
+    --ring: #34d399;
+  }
+}
+
+/* 🎨 Mapping theme variables เข้ากับ Tailwind CSS v4 */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
+  
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-
+  
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
-
+  
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-
+  
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-
+  
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-
+  
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-
+  
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-
+  
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
-  /* 📊 Chart Token System */
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  /* 📂 Sidebar Token System */
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-  /* 📐 Border Radius Token System */
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-
-  /* 🔤 Font Families */
-  --font-sans: var(--font-sans);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-heading: var(--font-sans);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
-/* ── 🟢 DYNAMIC DESIGN TOKENS (OKLCH SYSTEM) ────────────────────────────────── */
-:root {
-  /* Light Mode - Emerald Theme */
-  --background: oklch(0.985 0.008 145); /* ขาวอมเขียวอ่อนมากๆ สดชื่น สะอาดตา */
-  --foreground: oklch(0.25 0.04 145); /* เขียวเข้มจัดสำหรับข้อความหลัก */
-
-  --card: oklch(1 0 0); /* ขาวบริสุทธิ์ */
-  --card-foreground: oklch(0.25 0.04 145);
-
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.04 145);
-
-  --primary: oklch(0.69 0.17 155); /* เขียว Emerald สว่างกำลังดี */
-  --primary-foreground: oklch(0.99 0 0); /* ข้อความบนปุ่มเป็นสีขาว */
-
-  --secondary: oklch(0.95 0.02 145); /* เขียวพาสเทลสำหรับปุ่มรอง */
-  --secondary-foreground: oklch(0.35 0.05 150);
-
-  --muted: oklch(0.95 0.01 145);
-  --muted-foreground: oklch(0.55 0.02 145);
-
-  --accent: oklch(0.76 0.15 75); /* สีส้มอมเหลือง (Amber) ตัดสายตา */
-  --accent-foreground: oklch(0.99 0 0);
-
-  --destructive: oklch(0.6 0.18 25); /* แดงเตือนภัย/ลบข้อมูล */
-  --destructive-foreground: oklch(0.99 0 0);
-
-  --border: oklch(0.9 0.015 145); /* เส้นขอบเขียวกลมกลืน */
-  --input: oklch(0.9 0.015 145);
-  --ring: oklch(0.69 0.17 155);
-
-  --radius: 0.75rem;
-
-  /* Charts Data Representation */
-  --chart-1: oklch(0.69 0.17 155);
-  --chart-2: oklch(0.76 0.15 75);
-  --chart-3: oklch(0.6 0.15 220);
-  --chart-4: oklch(0.55 0.14 340);
-  --chart-5: oklch(0.48 0.12 120);
-
-  /* Navigation Sidebar Component */
-  --sidebar: oklch(0.99 0.005 145);
-  --sidebar-foreground: oklch(0.25 0.04 145);
-  --sidebar-primary: oklch(0.69 0.17 155);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.95 0.02 145);
-  --sidebar-accent-foreground: oklch(0.35 0.05 150);
-  --sidebar-border: oklch(0.92 0.01 145);
-  --sidebar-ring: oklch(0.69 0.17 155);
-}
-
-.dark {
-  /* Dark Mode - Deep Forest Theme */
-  --background: oklch(0.18 0.025 145); /* เขียวเข้มมืดจัด */
-  --foreground: oklch(0.95 0.02 145); /* ข้อความสีเขียวอ่อนมาก */
-
-  --card: oklch(0.22 0.03 145); /* การ์ดยกเลเยอร์ให้สว่างขึ้นเล็กน้อย */
-  --card-foreground: oklch(0.95 0.02 145);
-
-  --popover: oklch(0.22 0.03 145);
-  --popover-foreground: oklch(0.95 0.02 145);
-
-  --primary: oklch(0.78 0.14 150); /* เขียว Emerald สว่างขึ้นในโหมดมืด */
-  --primary-foreground: oklch(
-    0.18 0.025 145
-  ); /* ตัวหนังสือบนปุ่ม primary โหมดมืดเป็นเขียวเข้ม */
-
-  --secondary: oklch(0.26 0.03 145);
-  --secondary-foreground: oklch(0.9 0.02 145);
-
-  --muted: oklch(0.26 0.02 145);
-  --muted-foreground: oklch(0.65 0.02 145);
-
-  --accent: oklch(0.82 0.13 75);
-  --accent-foreground: oklch(0.18 0.025 145);
-
-  --destructive: oklch(0.45 0.15 25);
-  --destructive-foreground: oklch(0.95 0.02 145);
-
-  --border: oklch(0.28 0.02 145);
-  --input: oklch(0.28 0.02 145);
-  --ring: oklch(0.78 0.14 150);
-
-  /* Charts Data Representation (Dark) */
-  --chart-1: oklch(0.78 0.14 150);
-  --chart-2: oklch(0.82 0.13 75);
-  --chart-3: oklch(0.68 0.12 220);
-  --chart-4: oklch(0.62 0.12 340);
-  --chart-5: oklch(0.58 0.1 120);
-
-  /* Navigation Sidebar Component (Dark) */
-  --sidebar: oklch(0.2 0.025 145);
-  --sidebar-foreground: oklch(0.95 0.02 145);
-  --sidebar-primary: oklch(0.78 0.14 150);
-  --sidebar-primary-foreground: oklch(0.18 0.025 145);
-  --sidebar-accent: oklch(0.26 0.03 145);
-  --sidebar-accent-foreground: oklch(0.9 0.02 145);
-  --sidebar-border: oklch(0.26 0.02 145);
-  --sidebar-ring: oklch(0.78 0.14 150);
-}
-
-/* ── 🧱 BASE STYLES & resets ───────────────────────────────────────────────── */
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground antialiased select-none;
-  }
-  html {
-    @apply font-sans h-full w-full overscroll-behavior-none;
-  }
-}
-
-/* ── 🛠️ ENTERPRISE UTILITIES & FONT ENGINE ──────────────────────────────────── */
-@layer utilities {
-  /* Custom Preset Shadows Fixes */
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xs {
-    box-shadow: var(--shadow-2xs);
-  }
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-xs {
-    box-shadow: var(--shadow-xs);
-  }
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-sm {
-    box-shadow: var(--shadow-sm);
-  }
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow {
-    box-shadow: var(--shadow);
-  }
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-md {
-    box-shadow: var(--shadow-md);
-  }
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-lg {
-    box-shadow: var(--shadow-lg);
-  }
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-xl {
-    box-shadow: var(--shadow-xl);
-  }
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xl {
-    box-shadow: var(--shadow-2xl);
-  }
-
-  /* Runtime Font Injectors */
-  html[data-font="inter"] body {
-    --font-sans: var(--font-inter);
-  }
-  html[data-font="notoSans"] body {
-    --font-sans: var(--font-noto-sans);
-  }
-  html[data-font="nunitoSans"] body {
-    --font-sans: var(--font-nunito-sans);
-  }
-  html[data-font="figtree"] body {
-    --font-sans: var(--font-figtree);
-  }
-  html[data-font="roboto"] body {
-    --font-sans: var(--font-roboto);
-  }
-  html[data-font="geist"] body {
-    --font-sans: var(--font-geist);
-  }
-  html[data-font="raleway"] body {
-    --font-sans: var(--font-raleway);
-  }
-  html[data-font="dmSans"] body {
-    --font-sans: var(--font-dm-sans);
-  }
-  html[data-font="publicSans"] body {
-    --font-sans: var(--font-public-sans);
-  }
-  html[data-font="outfit"] body {
-    --font-sans: var(--font-outfit);
-  }
-  html[data-font="geistMono"] body {
-    --font-sans: var(--font-geist-mono);
-  }
-  html[data-font="geistPixelSquare"] body {
-    --font-sans: var(--font-geist-pixel-square);
-  }
-  html[data-font="jetBrainsMono"] body {
-    --font-sans: var(--font-jetbrains-mono);
-  }
-  html[data-font="notoSerif"] body {
-    --font-sans: var(--font-noto-serif);
-  }
-  html[data-font="robotoSlab"] body {
-    --font-sans: var(--font-roboto-slab);
-  }
-  html[data-font="merriweather"] body {
-    --font-sans: var(--font-merriweather);
-  }
-  html[data-font="lora"] body {
-    --font-sans: var(--font-lora);
-  }
-  html[data-font="playfairDisplay"] body {
-    --font-sans: var(--font-playfair-display);
-  }
-
-  /* Anti-Flicker Toggle Class for Theme Inversion */
-  .disable-transitions * {
-    transition: none !important;
-  }
-
-  /* Core Thai Typography Configuration */
-  .font-thai {
-    font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-      sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* Sharp Text-Shadow Enhancement */
-  .text-sharp {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  }
+/* Global Reset Styles */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
 }

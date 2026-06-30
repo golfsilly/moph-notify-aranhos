@@ -1,72 +1,72 @@
 @import "tailwindcss";
 
 :root {
-  /* 🟩 Light Mode - Emerald Theme */
-  --background: #f8fafc;           /* ใช้เทาอมฟ้าอ่อนมากเพื่อความสะอาดตา */
-  --foreground: #022c22;           /* เขียวเข้มจัดสำหรับข้อความหลัก */
+  /* 🌟 Light Mode - Premium Medical Theme */
+  --background: #f8fafc;
+  --foreground: #0f172a;           /* สีเทาเข้ม premium */
   
   --card: #ffffff;
-  --card-foreground: #022c22;
+  --card-foreground: #0f172a;
   
   --popover: #ffffff;
-  --popover-foreground: #022c22;
+  --popover-foreground: #0f172a;
   
-  --primary: #10b981;              /* Emerald 500 */
-  --primary-foreground: #ffffff;    /* ตัวหนังสือบนปุ่ม primary เป็นสีขาว */
+  --primary: #0ea5e9;              /* Sky Blue 500 - สดใส ทันสมัย */
+  --primary-foreground: #ffffff;
   
-  --secondary: #f0fdf4;            /* เขียวอ่อนสำหรับปุ่มรอง */
-  --secondary-foreground: #15803d; /* ข้อความบนปุ่มรอง */
+  --secondary: #f0f9ff;            /* Sky Blue อ่อนมาก */
+  --secondary-foreground: #0369a1;
   
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
   
-  --accent: #f59e0b;               /* ส้มอมเหลืองสำหรับจุดเด่น/แจ้งเตือน */
+  --accent: #8b5cf6;               /* Violet 500 - สำหรับ highlight */
   --accent-foreground: #ffffff;
   
-  --destructive: #ef4444;          /* แดงสำหรับปุ่มลบ/อันตราย */
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #10b981;                 /* วงแหวน Focus ใช้สีหลัก */
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0ea5e9;
   
-  --radius: 0.5rem;
+  --radius: 0.625rem;              /* ปรับให้โค้งมนทันสมัยขึ้น */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* ⬛ Dark Mode - Emerald Theme */
-    --background: #022c22;         /* เขียวเข้มมืดจัด */
-    --foreground: #f0fdf4;         /* ตัวหนังสือสีเขียวอ่อนมาก */
+    /* 🌑 Dark Mode - Premium */
+    --background: #0a0f1c;
+    --foreground: #f1f5f9;
     
-    --card: #064e3b;               /* การ์ดยกขึ้นมาให้สว่างกว่าพื้นหลังเล็กน้อย */
-    --card-foreground: #f0fdf4;
+    --card: #111827;
+    --card-foreground: #f1f5f9;
     
-    --popover: #064e3b;
-    --popover-foreground: #f0fdf4;
+    --popover: #111827;
+    --popover-foreground: #f1f5f9;
     
-    --primary: #34d399;            /* Emerald 400 สว่างขึ้นในโหมดมืด */
-    --primary-foreground: #022c22;  /* ตัวหนังสือบนปุ่ม primary โหมดมืดเป็นเขียวเข้ม */
+    --primary: #38bdf8;            /* Sky 400 */
+    --primary-foreground: #0f172a;
     
-    --secondary: #064e3b;
-    --secondary-foreground: #f0fdf4;
+    --secondary: #1e2937;
+    --secondary-foreground: #e0f2fe;
     
-    --muted: #064e3b;
-    --muted-foreground: #a1a1aa;
+    --muted: #1e2937;
+    --muted-foreground: #94a3b8;
     
-    --accent: #fbbf24;
-    --accent-foreground: #022c22;
+    --accent: #a78bfa;
+    --accent-foreground: #1e2937;
     
-    --destructive: #7f1d1d;
-    --destructive-foreground: #fef2f2;
+    --destructive: #f87171;
+    --destructive-foreground: #1e2937;
     
-    --border: #064e3b;
-    --input: #064e3b;
-    --ring: #34d399;
+    --border: #334155;
+    --input: #334155;
+    --ring: #38bdf8;
   }
 }
 
-/* 🎨 Mapping theme variables เข้ากับ Tailwind CSS v4 */
+/* 🎨 Tailwind CSS v4 Theme Mapping */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -101,9 +101,19 @@
   --radius-sm: calc(var(--radius) - 4px);
 }
 
-/* Global Reset Styles */
+/* Global Styles */
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* เพิ่มความหรูหราเล็กน้อย */
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.75);
 }

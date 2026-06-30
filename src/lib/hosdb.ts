@@ -38,14 +38,11 @@ const HOS_ENABLED = Boolean(poolConfig.host && poolConfig.host.length > 0);
 if (HOS_ENABLED) {
   setInterval(async () => {
     let conn: any | null = null;
-
     try {
       conn = await hosPool.getConnection();
-
       await conn.query("SELECT 1 AS heartbeat");
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
-
       console.warn("HOS DB heartbeat failed:", msg);
     } finally {
       try {

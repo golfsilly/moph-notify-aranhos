@@ -84,7 +84,6 @@ function buildSql(startDate: string, endDate: string) {
       BETWEEN '${startDate}'
       AND '${endDate}'
       AND o.checkin = 'N'
-      AND o.rent_user NOT IN (${users})
 
     GROUP BY
       o.rent_user,
@@ -101,7 +100,7 @@ function createMessage(
   startDate: string,
   endDate: string,
 ) {
-  let text = `📊 รายงานชาร์ทค้างสรุป แพทย์ใช้ทุน
+  let text = `📊 รายงานชาร์ทค้างสรุป (ทดสอบ)
 📅 ประจำวันที่: ${formatThaiShort(today)}
 ช่วง: ${formatThaiShort(startDate)} ถึง ${formatThaiShort(endDate)}
 

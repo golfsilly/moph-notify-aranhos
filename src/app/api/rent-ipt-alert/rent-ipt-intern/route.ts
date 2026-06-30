@@ -23,8 +23,8 @@ const SECRET_TOKEN = ENV.cronToken;
 const CONFIG = {
   startDate: "2026-05-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
-  clientKey: ENV.lineNotifyTestClientKey,
-  secretKey: ENV.lineNotifyTestSecretKey,
+  clientKey: ENV.lineNotifyRentIptInternClientKey,
+  secretKey: ENV.lineNotifyRentIptInternSecretKey,
 };
 
 function getThaiTime() {
@@ -195,7 +195,7 @@ export async function GET(request: Request) {
       data: result,
     });
   } catch (error: any) {
-    console.error("Rent IPT Alert Error:", error);
+    console.error("Rent IPT Intern Error:", error);
     return NextResponse.json(
       {
         success: false,
@@ -208,4 +208,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

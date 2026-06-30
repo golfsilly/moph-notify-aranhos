@@ -17,10 +17,19 @@ const envSchema = z.object({
 
   LINE_NOTIFY_TEST_CLIENT_KEY: z.string().optional(),
   LINE_NOTIFY_TEST_SECRET_KEY: z.string().optional(),
-  LINE_NOTIFY_RENT_IPT_CLIENT_KEY: z.string().optional(),
-  LINE_NOTIFY_RENT_IPT_SECRET_KEY: z.string().optional(),
+
+  LINE_NOTIFY_RENT_IPT_STAFF_CLIENT_KEY: z.string().optional(),
+  LINE_NOTIFY_RENT_IPT_STAFF_SECRET_KEY: z.string().optional(),
+
+  LINE_NOTIFY_RENT_IPT_INTERN_CLIENT_KEY: z.string().optional(),
+  LINE_NOTIFY_RENT_IPT_INTERN_SECRET_KEY: z.string().optional(),
+
   LINE_NOTIFY_DIGITAL_CLIENT_KEY: z.string().optional(),
   LINE_NOTIFY_DIGITAL_SECRET_KEY: z.string().optional(),
+
+  LINE_NOTIFY_DIGITAL_MISSION_CLIENT_KEY: z.string().optional(),
+  LINE_NOTIFY_DIGITAL_MISSION_SECRET_KEY: z.string().optional(),
+
   LINE_NOTIFY_HOSPITAL_CLIENT_KEY: z.string().optional(),
   LINE_NOTIFY_HOSPITAL_SECRET_KEY: z.string().optional(),
 });
@@ -52,11 +61,17 @@ export const ENV = {
   lineNotifyTestClientKey: _env.LINE_NOTIFY_TEST_CLIENT_KEY || "",
   lineNotifyTestSecretKey: _env.LINE_NOTIFY_TEST_SECRET_KEY || "",
 
-  lineNotifyRentIptClientKey: _env.LINE_NOTIFY_RENT_IPT_CLIENT_KEY || "",
-  lineNotifyRentIptSecretKey: _env.LINE_NOTIFY_RENT_IPT_SECRET_KEY || "",
+  lineNotifyRentIptStaffClientKey: _env.LINE_NOTIFY_RENT_IPT_STAFF_CLIENT_KEY || "",
+  lineNotifyRentIptStaffSecretKey: _env.LINE_NOTIFY_RENT_IPT_STAFF_SECRET_KEY || "",
+
+  lineNotifyRentIptInternClientKey: _env.LINE_NOTIFY_RENT_IPT_INTERN_CLIENT_KEY || "",
+  lineNotifyRentIptInternSecretKey: _env.LINE_NOTIFY_RENT_IPT_INTERN_SECRET_KEY || "",
 
   lineNotifyDigitalClientKey: _env.LINE_NOTIFY_DIGITAL_CLIENT_KEY || "",
   lineNotifyDigitalSecretKey: _env.LINE_NOTIFY_DIGITAL_SECRET_KEY || "",
+
+  lineNotifyDigitalMissionClientKey: _env.LINE_NOTIFY_DIGITAL_MISSION_CLIENT_KEY || "",
+  lineNotifyDigitalMissionSecretKey: _env.LINE_NOTIFY_DIGITAL_MISSION_SECRET_KEY || "",
 
   lineNotifyHospitalClientKey: _env.LINE_NOTIFY_HOSPITAL_CLIENT_KEY || "",
   lineNotifyHospitalSecretKey: _env.LINE_NOTIFY_HOSPITAL_SECRET_KEY || "",

@@ -60,23 +60,6 @@ export default function Home() {
             เพื่อเพิ่มประสิทธิภาพการทำงานของทีมแพทย์และบุคลากร
           </p>
 
-          {/* CTA Buttons */}
-          <div className="mt-12 flex flex-col justify-center gap-4 sm:flex-row">
-            <a
-              href="/dashboard"
-              className="rounded-2xl bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition hover:bg-primary/90 hover:shadow-xl"
-            >
-              เข้าสู่ระบบจัดการ
-            </a>
-
-            <a
-              href="#features"
-              className="rounded-2xl border border-border bg-card px-8 py-4 text-lg font-semibold text-foreground transition hover:bg-muted"
-            >
-              ดูฟีเจอร์ทั้งหมด
-            </a>
-          </div>
-
           {/* Trust bar */}
           <div className="mt-16 flex items-center justify-center gap-8 opacity-75">
             <div className="text-sm font-medium text-muted-foreground">

@@ -179,7 +179,7 @@ export async function GET(request: Request) {
       data: result,
     });
   } catch (error: any) {
-    console.error("Rent IPT Alert Error:", error);
+    console.error("Rent IPT All Error:", error);
     return NextResponse.json(
       {
         success: false,

@@ -5,7 +5,7 @@ declare global {
   var rentIptInternCronStarted: boolean | undefined;
 }
 
-const SECRET_TOKEN = ENV.cronToken
+const SECRET_TOKEN = ENV.cronToken;
 
 export function startCronRentIptIntern() {
   if (!SECRET_TOKEN) {
@@ -19,13 +19,12 @@ export function startCronRentIptIntern() {
   global.rentIptInternCronStarted = true;
 
   cron.schedule(
-    "0 9 * * *",
+    "0 18 * * *",
     async () => {
       console.log("🚀 เริ่มส่งรายงาน อัตโนมัติ");
 
       try {
-        const baseUrl =
-        ENV.appUrl || "http://localhost:50000";
+        const baseUrl = ENV.appUrl || "http://localhost:50000";
 
         const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-intern`;
 
@@ -57,6 +56,6 @@ export function startCronRentIptIntern() {
   );
 
   console.log(
-    "✅ Rent Ipt Intern สำหรับส่ง LINE Notify ทุกวัน 09:00 เริ่มทำงานแล้ว",
+    "✅ Rent Ipt Intern สำหรับส่ง LINE Notify ทุกวัน 18:00 เริ่มทำงานแล้ว",
   );
 }

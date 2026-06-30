@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home } from "lucide-react";
+import BackButton from "@/components/BackButton";
 
 export default function NotFound() {
   return (
@@ -12,6 +13,7 @@ export default function NotFound() {
         <h1 className="text-5xl font-bold text-foreground mb-3">
           ไม่พบหน้านี้
         </h1>
+
         <p className="text-muted-foreground text-lg mb-10">
           หน้าที่คุณกำลังค้นหาไม่มีอยู่ในระบบ
         </p>
@@ -25,13 +27,7 @@ export default function NotFound() {
             กลับหน้าหลัก
           </Link>
 
-          <button
-            onClick={() => window.history.back()}
-            className="flex items-center justify-center gap-2 border border-border hover:bg-muted px-8 py-4 rounded-2xl font-medium transition"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            ย้อนกลับ
-          </button>
+          <BackButton />
         </div>
 
         <p className="mt-12 text-xs text-muted-foreground">

@@ -27,8 +27,10 @@ export function startCronTest() {
         const baseUrl =
           ENV.appUrl || "http://localhost:50000";
 
-        // const url = `${baseUrl}/api/secret-token`;
-        const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-intern`;
+        const url = `${baseUrl}/api/secret-token`;
+        // const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-all`;
+        // const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-intern`;
+        // const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-staff`;
 
         const res = await fetch(url, {
           method: "GET",

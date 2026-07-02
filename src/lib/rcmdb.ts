@@ -1,16 +1,16 @@
-import { ENV } from "./../config/env";
+import { ENV } from "../config/env";
 import mysql, { Pool, PoolOptions, RowDataPacket } from "mysql2/promise";
 
 const poolConfig: PoolOptions = {
-  host: ENV.hosdb.host || "",
+  host: ENV.rcmdb.host || "",
 
-  user: ENV.hosdb.user || "",
+  user: ENV.rcmdb.user || "",
 
-  password: ENV.hosdb.pass || "",
+  password: ENV.rcmdb.pass || "",
 
-  database: ENV.hosdb.name || "",
+  database: ENV.rcmdb.name || "",
 
-  port: Number(ENV.hosdb.port) || 3306,
+  port: Number(ENV.rcmdb.port) || 3306,
 
   waitForConnections: true,
 
@@ -43,7 +43,7 @@ if (HOS_ENABLED) {
       await conn.query("SELECT 1 AS heartbeat");
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.warn("HOS DB heartbeat failed:", msg);
+      console.warn("rcmdb  heartbeat failed:", msg);
     } finally {
       try {
         conn?.release();
@@ -51,7 +51,7 @@ if (HOS_ENABLED) {
     }
   }, 25000);
 } else {
-  console.info("HOS DB heartbeat disabled");
+  console.info("rcmdb heartbeat disabled");
 }
 
 export async function queryHos<T = RowDataPacket[]>(
@@ -82,9 +82,9 @@ export async function queryHos<T = RowDataPacket[]>(
         continue;
       }
 
-      throw new Error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก HOSxP");
+      throw new Error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก rcmdb");
     }
   }
 
-  throw new Error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก HOSxP");
+  throw new Error("เกิดข้อผิดพลาดในการดึงข้อมูลจาก rcmdb");
 }

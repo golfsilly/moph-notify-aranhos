@@ -7,11 +7,15 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(50000),
   NEXT_PUBLIC_APP_URL: z.string().default("http://localhost:50000"),
 
-  HOS_DB_HOST: z.string().min(1, "Database host is required"),
+  HOS_DB_HOST: z.string().min(1, "Database HOSxP host is required"),
+  HOS_DB_HOST_SLAVE: z.string().min(1, "Database HOSxP slave host is required"),
   HOS_DB_PORT: z.coerce.number().default(3306),
-  HOS_DB_NAME: z.string().min(1, "Database name is required"),
-  HOS_DB_USER: z.string().min(1, "Database user is required"),
-  HOS_DB_PASS: z.string().min(1, "Database password is required"),
+  HOS_DB_USER: z.string().min(1, "Database HOSxP user is required"),
+  HOS_DB_PASS: z.string().min(1, "Database HOSxP password is required"),
+  
+  HOS_DB_NAME: z.string().min(1, "Database HOSxP name is required"),
+  HOS_DB_RCM_NAME: z.string().min(1, "Database RCM name is required"),
+  HOS_DB_REFER_NAME: z.string().min(1, "Database REFER name is required"),
 
   CRON_SECRET_TOKEN: z.string().min(1, "Cron secret token is missing"),
 
@@ -29,6 +33,9 @@ const envSchema = z.object({
 
   LINE_NOTIFY_DIGITAL_MISSION_CLIENT_KEY: z.string().optional(),
   LINE_NOTIFY_DIGITAL_MISSION_SECRET_KEY: z.string().optional(),
+
+  LINE_NOTIFY_KBH_CLIENT_KEY: z.string().optional(),
+  LINE_NOTIFY_KBH_SECRET_KEY: z.string().optional(),
 
   LINE_NOTIFY_HOSPITAL_CLIENT_KEY: z.string().optional(),
   LINE_NOTIFY_HOSPITAL_SECRET_KEY: z.string().optional(),
@@ -48,10 +55,25 @@ export const ENV = {
   isProduction: _env.NODE_ENV === "production",
   port: _env.PORT,
   appUrl: _env.NEXT_PUBLIC_APP_URL,
-  db: {
+  hosdb: {
     host: _env.HOS_DB_HOST,
+    // host: _env.HOS_DB_HOST_SLAVE,
     port: _env.HOS_DB_PORT,
     name: _env.HOS_DB_NAME,
+    user: _env.HOS_DB_USER,
+    pass: _env.HOS_DB_PASS,
+  },
+  rcmdb: {
+    host: _env.HOS_DB_HOST,
+    port: _env.HOS_DB_PORT,
+    name: _env.HOS_DB_RCM_NAME,
+    user: _env.HOS_DB_USER,
+    pass: _env.HOS_DB_PASS,
+  },
+  referdb: {
+    host: _env.HOS_DB_HOST,
+    port: _env.HOS_DB_PORT,
+    name: _env.HOS_DB_REFER_NAME,
     user: _env.HOS_DB_USER,
     pass: _env.HOS_DB_PASS,
   },
@@ -72,6 +94,9 @@ export const ENV = {
 
   lineNotifyDigitalMissionClientKey: _env.LINE_NOTIFY_DIGITAL_MISSION_CLIENT_KEY || "",
   lineNotifyDigitalMissionSecretKey: _env.LINE_NOTIFY_DIGITAL_MISSION_SECRET_KEY || "",
+
+  lineNotifyKbhClientKey: _env.LINE_NOTIFY_KBH_CLIENT_KEY || "",
+  lineNotifyKbhSecretKey: _env.LINE_NOTIFY_KBH_SECRET_KEY || "",
 
   lineNotifyHospitalClientKey: _env.LINE_NOTIFY_HOSPITAL_CLIENT_KEY || "",
   lineNotifyHospitalSecretKey: _env.LINE_NOTIFY_HOSPITAL_SECRET_KEY || "",

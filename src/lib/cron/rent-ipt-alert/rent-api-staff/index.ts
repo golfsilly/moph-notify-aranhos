@@ -1,15 +1,20 @@
-import { ENV } from "@/config/env";
 import cron from "node-cron";
+import { ENV } from "@/config/env";
 
 declare global {
   var rentIptStaffCronStarted: boolean | undefined;
 }
 
-const SECRET_TOKEN = ENV.cronToken;
+const TOKEN = ENV.cronToken;
+const SECRET = ENV.cronSecret;
 
 export function startCronRentIptStaff() {
-  if (!SECRET_TOKEN) {
-    throw new Error("CRON_SECRET_TOKEN is missing");
+  if (!TOKEN) {
+    throw new Error("CRON_TOKEN is missing");
+  }
+
+  if (!SECRET) {
+    throw new Error("CRON_SECRET is missing");
   }
 
   if (global.rentIptStaffCronStarted) {
@@ -24,14 +29,15 @@ export function startCronRentIptStaff() {
       console.log("🚀 เริ่มส่งรายงาน อัตโนมัติ");
 
       try {
-        const baseUrl = ENV.appUrl || "http://localhost:50000";
+        const baseUrl = ENV.appUrl;
 
         const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-staff`;
 
         const res = await fetch(url, {
           method: "GET",
           headers: {
-            "x-cron-token": SECRET_TOKEN,
+            "x-cron-token": TOKEN,
+            "x-cron-secret": SECRET,
           },
         });
 

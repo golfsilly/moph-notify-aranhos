@@ -1,15 +1,20 @@
-import { ENV } from "@/config/env";
 import cron from "node-cron";
+import { ENV } from "@/config/env";
 
 declare global {
   var rentIptAllCronStarted: boolean | undefined;
 }
 
-const SECRET_TOKEN = ENV.cronToken;
+const TOKEN = ENV.cronToken;
+const SECRET = ENV.cronSecret;
 
 export function startCronRentIptAll() {
-  if (!SECRET_TOKEN) {
-    throw new Error("CRON_SECRET_TOKEN is missing");
+  if (!TOKEN) {
+    throw new Error("CRON_TOKEN is missing");
+  }
+
+  if (!SECRET) {
+    throw new Error("CRON_SECRET is missing");
   }
 
   if (global.rentIptAllCronStarted) {
@@ -19,20 +24,21 @@ export function startCronRentIptAll() {
   global.rentIptAllCronStarted = true;
 
   cron.schedule(
-    "0 9 * * *",
+    "0 18 * * *",
     async () => {
       console.log("🚀 เริ่มส่งรายงาน อัตโนมัติ");
 
       try {
         const baseUrl =
-          ENV.appUrl || "http://localhost:50000";
+          ENV.appUrl;
 
         const url = `${baseUrl}/api/rent-ipt-alert/rent-ipt-all`;
 
         const res = await fetch(url, {
           method: "GET",
           headers: {
-            "x-cron-token": SECRET_TOKEN,
+            "x-cron-token": TOKEN,
+            "x-cron-secret": SECRET,
           },
         });
 
@@ -57,6 +63,6 @@ export function startCronRentIptAll() {
   );
 
   console.log(
-    "✅ Rent Ipt All สำหรับส่ง LINE Notify ทุกวัน 09:00 เริ่มทำงานแล้ว",
+    "✅ Rent Ipt All สำหรับส่ง LINE Notify ทุกวัน 18:00 เริ่มทำงานแล้ว",
   );
 }

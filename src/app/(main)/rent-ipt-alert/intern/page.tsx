@@ -1,12 +1,7 @@
 import { sendRentIptIntern } from "@/app/api/rent-ipt-alert/rent-ipt-intern/route";
 
-type RentIptRow = {
-  doctor: string;
-  total_rent: number;
-};
-
 export default async function RentIptAlertPage() {
-  const data: RentIptRow[] = await sendRentIptIntern();
+  const data = await sendRentIptIntern();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 p-6">

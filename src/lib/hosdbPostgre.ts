@@ -1,35 +1,21 @@
-import mysql, {
-  Pool,
-  PoolOptions,
-  RowDataPacket,
-  PoolConnection,
-  QueryError,
-} from "mysql2/promise";
-
+import { Pool, PoolConfig, QueryResultRow } from "pg";
 import { ENV } from "@/config/env";
 
 // ======================================================
 // Pool Config
 // ======================================================
-const poolConfig: PoolOptions = {
+const poolConfig: PoolConfig = {
   host: ENV.hosdb.hostSlave,
   user: ENV.hosdb.user,
   password: ENV.hosdb.pass,
   database: ENV.hosdb.name,
-  port: ENV.hosdb.port,
-
-  waitForConnections: true,
-  connectionLimit: 10,
-  maxIdle: 10,
-  idleTimeout: 30000,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000,
-  connectTimeout: 10000,
-  charset: "tis620",
+  port: Number(ENV.hosdb.port) || 5432,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 };
 
-const hosPool: Pool = mysql.createPool(poolConfig);
+const hosPool = new Pool(poolConfig);
 
 const HOS_ENABLED = Boolean(poolConfig.host?.length);
 
@@ -38,15 +24,15 @@ const HOS_ENABLED = Boolean(poolConfig.host?.length);
 // ======================================================
 if (HOS_ENABLED) {
   setInterval(async () => {
-    let conn: PoolConnection | null = null;
-
+    let conn = null;
     try {
-      conn = await hosPool.getConnection();
+      conn = await hosPool.connect();
       await conn.query("SELECT 1 AS heartbeat");
     } catch (error: unknown) {
-      const err = error as QueryError;
-
-      console.warn("HOS DB heartbeat failed:", err.message ?? String(error));
+      console.warn(
+        "HOS DB heartbeat failed:",
+        (error as unknown & { message?: string }).message ?? String(error),
+      );
     } finally {
       conn?.release();
     }
@@ -58,27 +44,27 @@ if (HOS_ENABLED) {
 // ======================================================
 // Query function
 // ======================================================
-export async function queryHos<T = RowDataPacket[]>(
+export async function queryHos<T = QueryResultRow[]>(
   sql: string,
   params: unknown[] = [],
   retries = 2,
 ): Promise<T> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const [rows] = await hosPool.query(sql, params);
-      return rows as T;
+      const res = await hosPool.query(sql, params);
+      return res.rows as T;
     } catch (error: unknown) {
-      const err = error as QueryError;
-
       console.error(
         `HOS DB Query Error (attempt ${attempt + 1}):`,
-        err.message ?? err,
+        (error as unknown & { message?: string }).message ?? error,
       );
 
-      if (
-        (err.code === "ECONNRESET" || err.code === "ETIMEDOUT") &&
-        attempt < retries
-      ) {
+      const isNetworkError =
+        (error as unknown & { code?: string }).code === "ECONNRESET" ||
+        (error as unknown & { code?: string }).code === "ETIMEDOUT" ||
+        (error as unknown & { message?: string }).message?.includes("timeout");
+
+      if (isNetworkError && attempt < retries) {
         await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
         continue;
       }

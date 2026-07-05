@@ -1,7 +1,7 @@
 "use client";
 
+import { RentIptRow } from "@/types/rent-ipt.type";
 import { useQuery } from "@tanstack/react-query";
-import { RentIptRow } from "./type";
 
 export function useRentIptAlertAll() {
   return useQuery({

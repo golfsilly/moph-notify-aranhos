@@ -3,7 +3,7 @@ import { ENV } from '@/config/env';
 
 export async function GET() {
   try {
-    if (!ENV.lineNotifyTestClientKey || !ENV.lineNotifyTestSecretKey) {
+    if (!ENV.lineNotify.test.clientKey || !ENV.lineNotify.test.secretKey) {
       return NextResponse.json({ status: 'missing_config' }, { status: 400 });
     }
 

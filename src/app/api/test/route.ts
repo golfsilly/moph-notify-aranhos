@@ -12,12 +12,12 @@ const SECRET = ENV.cronSecret;
 const CONFIG = {
   startDate: "2026-05-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
-  clientKey: ENV.lineNotify.rentIptIntern.clientKey,
-  secretKey: ENV.lineNotify.rentIptIntern.secretKey,
+  clientKey: ENV.lineNotify.test.clientKey,
+  secretKey: ENV.lineNotify.test.secretKey,
 };
 
 // ======================================================
-// Circuit Breaker
+// Circuit Breaker (in-memory)
 // ======================================================
 let failCount = 0;
 let isOpen = false;
@@ -36,9 +36,7 @@ function getThaiTime() {
 function formatThaiShort(dateString: string) {
   const date = new Date(dateString);
 
-  if (Number.isNaN(date.getTime())) {
-    return "ไม่ระบุวันที่";
-  }
+  if (Number.isNaN(date.getTime())) return "ไม่ระบุวันที่";
 
   return date
     .toLocaleDateString("th-TH", {
@@ -79,16 +77,6 @@ function buildSql(startDate: string, endDate: string) {
     WHERE
       o.rent_date BETWEEN '${startDate}' AND '${endDate}'
       AND o.checkin = 'N'
-      AND o.rent_user IN (
-        'Kanokporn_s',
-        'chalisa',
-        'Sorarath',
-        '84170',
-        '9568',
-        '82505',
-        '83371',
-        '83382'
-      )
     GROUP BY o.rent_user, ou.NAME
     ORDER BY total_rent DESC;
   `;
@@ -101,9 +89,9 @@ function createMessage(
   data: RentIptRow[],
   today: string,
   startDate: string,
-  endDate: string,
+  endDate: string
 ) {
-  let text = `📊 รายงานชาร์ทค้างสรุป แพทย์ปี 1
+  let text = `📊 รายงานชาร์ทค้างสรุป (ทดสอบ)
 📅 ประจำวันที่: ${formatThaiShort(today)}
 ช่วง: ${formatThaiShort(startDate)} ถึง ${formatThaiShort(endDate)}
 
@@ -117,6 +105,32 @@ function createMessage(
 
   text += "\n\n#RentIPTAlert";
   return text;
+}
+
+function createMessage2(
+  data: RentIptRow[],
+  today: string,
+  startDate: string,
+  endDate: string
+) {
+  const body = data.length
+    ? data
+        .map(
+          (d, i) => `${i + 1}. ${d.doctor} ${d.total_rent} ชาร์ท`
+        )
+        .join("\n")
+    : "ไม่มีข้อมูล";
+
+  return `
+📊 รายงานชาร์ทค้างสรุป (ทดสอบ)
+
+📅 ประจำวันที่ : ${formatThaiShort(today)}
+📆 ช่วงวันที่   : ${formatThaiShort(startDate)} - ${formatThaiShort(endDate)}
+
+${body}
+
+#RentIPTAlert
+`.trim();
 }
 
 // ======================================================
@@ -150,7 +164,7 @@ function recordSuccess() {
 }
 
 // ======================================================
-// Retry Notify
+// Retry Notify (3 times)
 // ======================================================
 async function sendNotifyWithRetry(message: string, retry = 3) {
   if (!checkCircuit()) {
@@ -194,14 +208,16 @@ async function sendNotifyWithRetry(message: string, retry = 3) {
 // ======================================================
 function runInBackground(task: () => Promise<void>) {
   setTimeout(() => {
-    task().catch((err) => console.error("Background task error:", err));
+    task().catch((err) =>
+      console.error("Background task error:", err)
+    );
   }, 0);
 }
 
 // ======================================================
 // Core Logic
 // ======================================================
-export async function sendRentIptIntern() {
+async function sendRentIptAlert() {
   const { today, startDate, endDate } = getDateRange();
 
   const sql = buildSql(startDate, endDate);
@@ -245,7 +261,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const result = await sendRentIptIntern();
+    const result = await sendRentIptAlert();
 
     return NextResponse.json({
       success: true,
@@ -257,14 +273,16 @@ export async function GET(request: Request) {
       data: result,
     });
   } catch (error: unknown) {
-    console.error("Rent IPT Intern Error:", error);
+    console.error("Rent IPT Alert Error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error
+          ? error.message
+          : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

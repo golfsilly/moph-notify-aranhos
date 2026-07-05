@@ -1,17 +1,27 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 export async function GET() {
-    try {
-        const root = "Hello MOPH NOTIFY ARANHOS API 🌻🌍"
-        return NextResponse.json({ status: 200, results: root });
+  try {
+    return NextResponse.json({
+      status: 200,
+      results: "Hello MOPH NOTIFY ARANHOS API 🌻🌍",
+    });
+  } catch (error: unknown) {
+    let errorMessage: unknown;
 
-    } catch (error: any) {
-        let errorMessage
-        try {
-            errorMessage = JSON.parse(error.message)
-        } catch (parseError: any) {
-            errorMessage = error.message
-        }
-        return NextResponse.json({ status: 500, results: errorMessage })
+    if (error instanceof Error) {
+      try {
+        errorMessage = JSON.parse(error.message);
+      } catch {
+        errorMessage = error.message;
+      }
+    } else {
+      errorMessage = "Unknown error";
     }
+
+    return NextResponse.json({
+      status: 500,
+      results: errorMessage,
+    });
+  }
 }

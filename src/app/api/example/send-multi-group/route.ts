@@ -12,12 +12,23 @@ const SECRET = ENV.cronSecret;
 const CONFIG = {
   startDate: "2026-05-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
-  clientKey: ENV.lineNotify.rentIptIntern.clientKey,
-  secretKey: ENV.lineNotify.rentIptIntern.secretKey,
+
+  groups: [
+    {
+      name: "groupA",
+      clientKey: ENV.lineNotify.test.clientKey,
+      secretKey: ENV.lineNotify.test.secretKey,
+    },
+    {
+      name: "groupB",
+      clientKey: ENV.lineNotify.test.clientKey,
+      secretKey: ENV.lineNotify.test.secretKey,
+    },
+  ],
 };
 
 // ======================================================
-// Circuit Breaker
+// Circuit Breaker (in-memory)
 // ======================================================
 let failCount = 0;
 let isOpen = false;
@@ -36,9 +47,7 @@ function getThaiTime() {
 function formatThaiShort(dateString: string) {
   const date = new Date(dateString);
 
-  if (Number.isNaN(date.getTime())) {
-    return "ไม่ระบุวันที่";
-  }
+  if (Number.isNaN(date.getTime())) return "ไม่ระบุวันที่";
 
   return date
     .toLocaleDateString("th-TH", {
@@ -50,11 +59,7 @@ function formatThaiShort(dateString: string) {
     .trim();
 }
 
-function getDateRange(): {
-  today: string;
-  startDate: string;
-  endDate: string;
-} {
+function getDateRange() {
   const thaiTime = getThaiTime();
   const end = new Date(thaiTime);
   end.setDate(end.getDate() - 5);
@@ -79,16 +84,6 @@ function buildSql(startDate: string, endDate: string) {
     WHERE
       o.rent_date BETWEEN '${startDate}' AND '${endDate}'
       AND o.checkin = 'N'
-      AND o.rent_user IN (
-        'Kanokporn_s',
-        'chalisa',
-        'Sorarath',
-        '84170',
-        '9568',
-        '82505',
-        '83371',
-        '83382'
-      )
     GROUP BY o.rent_user, ou.NAME
     ORDER BY total_rent DESC;
   `;
@@ -101,9 +96,9 @@ function createMessage(
   data: RentIptRow[],
   today: string,
   startDate: string,
-  endDate: string,
+  endDate: string
 ) {
-  let text = `📊 รายงานชาร์ทค้างสรุป แพทย์ปี 1
+  let text = `📊 รายงานชาร์ทค้างสรุป (ทดสอบ)
 📅 ประจำวันที่: ${formatThaiShort(today)}
 ช่วง: ${formatThaiShort(startDate)} ถึง ${formatThaiShort(endDate)}
 
@@ -150,9 +145,13 @@ function recordSuccess() {
 }
 
 // ======================================================
-// Retry Notify
+// Notify (Retry)
 // ======================================================
-async function sendNotifyWithRetry(message: string, retry = 3) {
+async function sendNotifyWithRetry(
+  message: string,
+  target: { clientKey: string; secretKey: string },
+  retry = 3
+) {
   if (!checkCircuit()) {
     console.warn("Circuit open - skip notify");
     return false;
@@ -164,8 +163,8 @@ async function sendNotifyWithRetry(message: string, retry = 3) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "client-key": CONFIG.clientKey,
-          "secret-key": CONFIG.secretKey,
+          "client-key": target.clientKey,
+          "secret-key": target.secretKey,
         },
         body: JSON.stringify({
           messages: [{ type: "text", text: message }],
@@ -177,9 +176,9 @@ async function sendNotifyWithRetry(message: string, retry = 3) {
         return true;
       }
 
-      console.warn(`Notify attempt ${i} failed:`, res.status);
+      console.warn(`[${target.clientKey}] attempt ${i} failed:`, res.status);
     } catch (err) {
-      console.warn(`Notify attempt ${i} error:`, err);
+      console.warn(`[${target.clientKey}] attempt ${i} error:`, err);
     }
 
     await new Promise((r) => setTimeout(r, 500 * i));
@@ -194,14 +193,16 @@ async function sendNotifyWithRetry(message: string, retry = 3) {
 // ======================================================
 function runInBackground(task: () => Promise<void>) {
   setTimeout(() => {
-    task().catch((err) => console.error("Background task error:", err));
+    task().catch((err) =>
+      console.error("Background task error:", err)
+    );
   }, 0);
 }
 
 // ======================================================
 // Core Logic
 // ======================================================
-export async function sendRentIptIntern() {
+async function sendRentIptAlertMultiGroup() {
   const { today, startDate, endDate } = getDateRange();
 
   const sql = buildSql(startDate, endDate);
@@ -209,8 +210,16 @@ export async function sendRentIptIntern() {
 
   const message = createMessage(data, today, startDate, endDate);
 
+  // 🔥 send to ALL groups
   runInBackground(async () => {
-    await sendNotifyWithRetry(message);
+    await Promise.allSettled(
+      CONFIG.groups.map((g) =>
+        sendNotifyWithRetry(message, {
+          clientKey: g.clientKey,
+          secretKey: g.secretKey,
+        })
+      )
+    );
   });
 
   return data;
@@ -245,26 +254,27 @@ export async function GET(request: Request) {
       );
     }
 
-    const result = await sendRentIptIntern();
+    const result = await sendRentIptAlertMultiGroup();
 
     return NextResponse.json({
       success: true,
-      message: "ส่งแจ้งเตือนสำเร็จ (background)",
+      message: "ส่งแจ้งเตือนสำเร็จ (multi-group background)",
       meta: {
         count: result.length,
+        groups: CONFIG.groups.length,
         timestamp: new Date().toISOString(),
       },
       data: result,
     });
   } catch (error: unknown) {
-    console.error("Rent IPT Intern Error:", error);
+    console.error("Rent IPT Alert Error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

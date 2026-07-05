@@ -1,21 +1,34 @@
 import { NextResponse } from "next/server";
 import { queryHos } from "@/lib/hosdb";
 import { ENV } from "@/config/env";
+import { RentIptRow } from "@/types/rent-ipt.type";
 
-interface RentSummary {
-  doctor: string;
-  total_rent: number;
-}
-
-const SECRET_TOKEN = ENV.cronToken;
+// ======================================================
+// Config
+// ======================================================
+const TOKEN = ENV.cronToken;
+const SECRET = ENV.cronSecret;
 
 const CONFIG = {
   startDate: "2026-05-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
-  clientKey: ENV.lineNotifyTestClientKey,
-  secretKey: ENV.lineNotifyTestSecretKey,
+  clientKey: ENV.lineNotify.test.clientKey,
+  secretKey: ENV.lineNotify.test.secretKey,
 };
 
+// ======================================================
+// Circuit Breaker (in-memory)
+// ======================================================
+let failCount = 0;
+let isOpen = false;
+let lastFailTime = 0;
+
+const CIRCUIT_LIMIT = 5;
+const RESET_TIME = 60 * 1000;
+
+// ======================================================
+// Utils
+// ======================================================
 function getThaiTime() {
   return new Date(Date.now() + 7 * 60 * 60 * 1000);
 }
@@ -23,9 +36,7 @@ function getThaiTime() {
 function formatThaiShort(dateString: string) {
   const date = new Date(dateString);
 
-  if (Number.isNaN(date.getTime())) {
-    return "ไม่ระบุวันที่";
-  }
+  if (Number.isNaN(date.getTime())) return "ไม่ระบุวันที่";
 
   return date
     .toLocaleDateString("th-TH", {
@@ -53,37 +64,32 @@ function getDateRange(): {
   };
 }
 
+// ======================================================
+// SQL Builder
+// ======================================================
 function buildSql(startDate: string, endDate: string) {
   return `
     SELECT
       ou.NAME AS doctor,
       CAST(COUNT(*) AS UNSIGNED) AS total_rent
-
     FROM ipdrent o
-
-    LEFT JOIN opduser ou
-      ON ou.loginname = o.rent_user
-
+    LEFT JOIN opduser ou ON ou.loginname = o.rent_user
     WHERE
-      o.rent_date
-      BETWEEN '${startDate}'
-      AND '${endDate}'
+      o.rent_date BETWEEN '${startDate}' AND '${endDate}'
       AND o.checkin = 'N'
-
-    GROUP BY
-      o.rent_user,
-      ou.NAME
-
-    ORDER BY 
-      total_rent DESC;
+    GROUP BY o.rent_user, ou.NAME
+    ORDER BY total_rent DESC;
   `;
 }
 
+// ======================================================
+// Message Builder
+// ======================================================
 function createMessage(
-  data: RentSummary[],
+  data: RentIptRow[],
   today: string,
   startDate: string,
-  endDate: string,
+  endDate: string
 ) {
   let text = `📊 รายงานชาร์ทค้างสรุปทั้งหมด
 📅 ประจำวันที่: ${formatThaiShort(today)}
@@ -91,76 +97,141 @@ function createMessage(
 
 `;
 
-  if (data.length > 0) {
-    data.forEach((item, index) => {
-      text += `${index + 1}. ${item.doctor} ${item.total_rent} ชาร์ท\n`;
-    });
-  }
+  text += data.length
+    ? data
+        .map((d, i) => `${i + 1}. ${d.doctor} ${d.total_rent} ชาร์ท`)
+        .join("\n")
+    : "ไม่มีข้อมูล";
 
-  text += "\n#RentIPTAlert";
-
+  text += "\n\n#RentIPTAlert";
   return text;
 }
 
-async function sendNotify(message: string) {
-  const response = await fetch(CONFIG.endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "client-key": CONFIG.clientKey,
-      "secret-key": CONFIG.secretKey,
-    },
-    body: JSON.stringify({
-      messages: [
-        {
-          type: "text",
-          text: message,
-        },
-      ],
-    }),
-  });
+// ======================================================
+// Circuit Breaker Logic
+// ======================================================
+function checkCircuit() {
+  if (!isOpen) return true;
 
-  if (!response.ok) {
-    throw new Error(`Notify error ${response.status}`);
+  const now = Date.now();
+  if (now - lastFailTime > RESET_TIME) {
+    isOpen = false;
+    failCount = 0;
+    return true;
+  }
+
+  return false;
+}
+
+function recordFailure() {
+  failCount++;
+  lastFailTime = Date.now();
+
+  if (failCount >= CIRCUIT_LIMIT) {
+    isOpen = true;
   }
 }
 
-export async function sendRentIptAll() {
+function recordSuccess() {
+  failCount = 0;
+  isOpen = false;
+}
+
+// ======================================================
+// Retry Notify (3 times)
+// ======================================================
+async function sendNotifyWithRetry(message: string, retry = 3) {
+  if (!checkCircuit()) {
+    console.warn("Circuit open - skip notify");
+    return false;
+  }
+
+  for (let i = 1; i <= retry; i++) {
+    try {
+      const res = await fetch(CONFIG.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "client-key": CONFIG.clientKey,
+          "secret-key": CONFIG.secretKey,
+        },
+        body: JSON.stringify({
+          messages: [{ type: "text", text: message }],
+        }),
+      });
+
+      if (res.ok) {
+        recordSuccess();
+        return true;
+      }
+
+      console.warn(`Notify attempt ${i} failed:`, res.status);
+    } catch (err) {
+      console.warn(`Notify attempt ${i} error:`, err);
+    }
+
+    await new Promise((r) => setTimeout(r, 500 * i));
+  }
+
+  recordFailure();
+  return false;
+}
+
+// ======================================================
+// Background Runner
+// ======================================================
+function runInBackground(task: () => Promise<void>) {
+  setTimeout(() => {
+    task().catch((err) =>
+      console.error("Background task error:", err)
+    );
+  }, 0);
+}
+
+// ======================================================
+// Core Logic
+// ======================================================
+async function sendRentIptAll() {
   const { today, startDate, endDate } = getDateRange();
+
   const sql = buildSql(startDate, endDate);
-  const data = await queryHos<RentSummary[]>(sql);
+  const data = await queryHos<RentIptRow[]>(sql);
+
   const message = createMessage(data, today, startDate, endDate);
 
-  await sendNotify(message);
+  runInBackground(async () => {
+    await sendNotifyWithRetry(message);
+  });
 
   return data;
 }
 
+// ======================================================
+// API Route
+// ======================================================
 export async function GET(request: Request) {
   try {
     const token = request.headers.get("x-cron-token");
+    const secret = request.headers.get("x-cron-secret");
 
-    if (!SECRET_TOKEN) {
+    if (!token) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "CRON_SECRET_TOKEN is missing",
-        },
-        {
-          status: 500,
-        },
+        { success: false, error: "CRON_TOKEN is missing" },
+        { status: 500 },
       );
     }
 
-    if (token !== SECRET_TOKEN) {
+    if (!secret) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-        },
-        {
-          status: 401,
-        },
+        { success: false, error: "CRON_SECRET is missing" },
+        { status: 500 },
+      );
+    }
+
+    if (token !== TOKEN || secret !== SECRET) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -168,28 +239,22 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-
-      message: "ส่งแจ้งเตือนสำเร็จ",
-
+      message: "ส่งแจ้งเตือนสำเร็จ (background)",
       meta: {
         count: result.length,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       },
-
       data: result,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Rent IPT All Error:", error);
+
     return NextResponse.json(
       {
         success: false,
-
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       },
-      {
-        status: 500,
-      },
+      { status: 500 }
     );
   }
 }
-

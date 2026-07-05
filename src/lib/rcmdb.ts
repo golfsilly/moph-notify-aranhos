@@ -1,84 +1,85 @@
-import { ENV } from "../config/env";
-import mysql, { Pool, PoolOptions, RowDataPacket } from "mysql2/promise";
+import mysql, {
+  Pool,
+  PoolOptions,
+  RowDataPacket,
+  PoolConnection,
+  QueryError,
+} from "mysql2/promise";
 
+import { ENV } from "@/config/env";
+
+// ======================================================
+// Pool Config
+// ======================================================
 const poolConfig: PoolOptions = {
-  host: ENV.rcmdb.host || "",
-
-  user: ENV.rcmdb.user || "",
-
-  password: ENV.rcmdb.pass || "",
-
-  database: ENV.rcmdb.name || "",
-
-  port: Number(ENV.rcmdb.port) || 3306,
+  host: ENV.rcmdb.host,
+  user: ENV.rcmdb.user,
+  password: ENV.rcmdb.pass,
+  database: ENV.rcmdb.name,
+  port: ENV.rcmdb.port,
 
   waitForConnections: true,
-
   connectionLimit: 10,
-
   maxIdle: 10,
-
   idleTimeout: 30000,
-
   queueLimit: 0,
-
   enableKeepAlive: true,
-
   keepAliveInitialDelay: 10000,
-
   connectTimeout: 10000,
-
   charset: "tis620",
 };
 
-const hosPool: Pool = mysql.createPool(poolConfig);
+const rcmPool: Pool = mysql.createPool(poolConfig);
 
-const HOS_ENABLED = Boolean(poolConfig.host && poolConfig.host.length > 0);
+const RCM_ENABLED = Boolean(poolConfig.host?.length);
 
-if (HOS_ENABLED) {
+// ======================================================
+// Heartbeat
+// ======================================================
+if (RCM_ENABLED) {
   setInterval(async () => {
-    let conn: any | null = null;
+    let conn: PoolConnection | null = null;
+
     try {
-      conn = await hosPool.getConnection();
+      conn = await rcmPool.getConnection();
       await conn.query("SELECT 1 AS heartbeat");
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error);
-      console.warn("rcmdb  heartbeat failed:", msg);
+      const err = error as QueryError;
+
+      console.warn("rcmdb heartbeat failed:", err.message ?? String(error));
     } finally {
-      try {
-        conn?.release();
-      } catch {}
+      conn?.release();
     }
   }, 25000);
 } else {
   console.info("rcmdb heartbeat disabled");
 }
 
-export async function queryHos<T = RowDataPacket[]>(
+// ======================================================
+// Query Function
+// ======================================================
+export async function queryRcm<T = RowDataPacket[]>(
   sql: string,
-  params: any[] = [],
+  params: unknown[] = [],
   retries = 2,
 ): Promise<T> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const [rows] = await hosPool.query(sql, params);
-
+      const [rows] = await rcmPool.query(sql, params);
       return rows as T;
-    } catch (error: any) {
-      console.error(
-        `Database Query Error (attempt ${attempt + 1}):`,
+    } catch (error: unknown) {
+      const err = error as QueryError;
 
-        error,
+      console.error(
+        `RCM DB Query Error (attempt ${attempt + 1}):`,
+        err.message ?? err,
       );
 
       if (
-        (error.code === "ECONNRESET" || error.code === "ETIMEDOUT") &&
+        (err.code === "ECONNRESET" || err.code === "ETIMEDOUT") &&
         attempt < retries
       ) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, 400 * (attempt + 1)),
-        );
-
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
         continue;
       }
 

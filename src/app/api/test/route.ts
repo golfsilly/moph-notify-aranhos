@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { queryHos } from "@/lib/hosdb";
 import { ENV } from "@/config/env";
+import { queryHos } from "@/lib/hosdb";
 import { RentIptRow } from "@/types/rent-ipt.type";
+import { NextResponse } from "next/server";
 
 // ======================================================
 // Config
@@ -10,7 +10,7 @@ const TOKEN = ENV.cronToken;
 const SECRET = ENV.cronSecret;
 
 const CONFIG = {
-  startDate: "2026-05-01",
+  startDate: "2026-07-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
   clientKey: ENV.lineNotify.test.clientKey,
   secretKey: ENV.lineNotify.test.secretKey,
@@ -89,7 +89,7 @@ function createMessage(
   data: RentIptRow[],
   today: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ) {
   let text = `📊 รายงานชาร์ทค้างสรุป (ทดสอบ)
 📅 ประจำวันที่: ${formatThaiShort(today)}
@@ -111,13 +111,11 @@ function createMessage2(
   data: RentIptRow[],
   today: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ) {
   const body = data.length
     ? data
-        .map(
-          (d, i) => `${i + 1}. ${d.doctor} ${d.total_rent} ชาร์ท`
-        )
+        .map((d, i) => `${i + 1}. ${d.doctor} ${d.total_rent} ชาร์ท`)
         .join("\n")
     : "ไม่มีข้อมูล";
 
@@ -208,9 +206,7 @@ async function sendNotifyWithRetry(message: string, retry = 3) {
 // ======================================================
 function runInBackground(task: () => Promise<void>) {
   setTimeout(() => {
-    task().catch((err) =>
-      console.error("Background task error:", err)
-    );
+    task().catch((err) => console.error("Background task error:", err));
   }, 0);
 }
 
@@ -278,11 +274,9 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error
-          ? error.message
-          : "Unknown error",
+        error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

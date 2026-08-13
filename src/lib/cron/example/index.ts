@@ -1,6 +1,6 @@
-import cron from "node-cron";
 import { ExampleService } from "@/services/example.service";
 import { LineNotifyService } from "@/services/line-notify.service";
+import cron from "node-cron";
 
 // ======================================================
 // Global State
@@ -43,7 +43,6 @@ function startCron(name: string, schedule: string, task: () => Promise<void>) {
 
         failureCount.set(name, 0);
         isCritical.set(name, false);
-
       } catch (error) {
         const duration = Date.now() - startTime;
         const currentFailures = (failureCount.get(name) || 0) + 1;

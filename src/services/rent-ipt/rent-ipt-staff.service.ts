@@ -1,7 +1,7 @@
 import { queryHos } from "@/lib/hosdb";
-import { LineNotifyService } from "../line-notify.service";
-import { RowDataPacket } from "mysql2";
 import { RentIptRow } from "@/types/rent-ipt.type";
+import { RowDataPacket } from "mysql2";
+import { LineNotifyService } from "../line-notify.service";
 
 type DateRange = {
   start: string;
@@ -92,7 +92,7 @@ export class RentIptStaffService {
     endDate.setDate(endDate.getDate() - 5);
 
     const dateRange: DateRange = {
-      start: "2026-05-01",
+      start: "2026-07-01",
       end: endDate.toISOString().split("T")[0]!,
       today: thaiNow.toISOString().split("T")[0]!,
     };

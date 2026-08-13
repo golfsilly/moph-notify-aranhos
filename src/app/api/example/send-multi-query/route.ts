@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { queryHos } from "@/lib/hosdb";
 import { ENV } from "@/config/env";
+import { queryHos } from "@/lib/hosdb";
 import { RentIptRow } from "@/types/rent-ipt.type";
+import { NextResponse } from "next/server";
 
 // ======================================================
 // Config
@@ -11,7 +11,7 @@ const TOKEN = ENV.cronToken;
 const SECRET = ENV.cronSecret;
 
 const CONFIG = {
-  startDate: "2026-05-01",
+  startDate: "2026-07-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
   clientKey: ENV.lineNotify.test.clientKey,
   secretKey: ENV.lineNotify.test.secretKey,

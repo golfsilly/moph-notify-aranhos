@@ -1,6 +1,6 @@
 import { queryHos } from "@/lib/hosdb";
-import { LineNotifyService } from "./line-notify.service";
 import { RowDataPacket } from "mysql2";
+import { LineNotifyService } from "./line-notify.service";
 
 type DateRange = {
   start: string;
@@ -99,7 +99,7 @@ export class ExampleService {
     endDate.setDate(endDate.getDate() - 5);
 
     const dateRange: DateRange = {
-      start: "2026-05-01",
+      start: "2026-07-01",
       end: endDate.toISOString().split("T")[0]!,
       today: thaiNow.toISOString().split("T")[0]!,
     };
@@ -167,7 +167,9 @@ export class ExampleService {
         dateRange.end,
       );
 
-      const notifySuccess = await LineNotifyService.sendToTest(message) && LineNotifyService.sendToDigital(message);
+      const notifySuccess =
+        (await LineNotifyService.sendToTest(message)) &&
+        LineNotifyService.sendToDigital(message);
 
       return {
         success: notifySuccess,
@@ -183,39 +185,41 @@ export class ExampleService {
   }
 
   static async multitriggerReport() {
-  try {
-    const { staff, intern, dateRange } = await ExampleService.getSummary();
+    try {
+      const { staff, intern, dateRange } = await ExampleService.getSummary();
 
-    const message = createMessage(
-      intern,
-      staff,
-      dateRange.today,
-      dateRange.start,
-      dateRange.end,
-    );
+      const message = createMessage(
+        intern,
+        staff,
+        dateRange.today,
+        dateRange.start,
+        dateRange.end,
+      );
 
-    // ส่ง 2 กลุ่มพร้อมกัน (แนะนำ)
-    const [notifyTest, notifyDigital] = await Promise.all([
-      LineNotifyService.sendToTest(message),
-      LineNotifyService.sendToTest(message),
-    ]);
+      // ส่ง 2 กลุ่มพร้อมกัน (แนะนำ)
+      const [notifyTest, notifyDigital] = await Promise.all([
+        LineNotifyService.sendToTest(message),
+        LineNotifyService.sendToTest(message),
+      ]);
 
-    const overallSuccess = notifyTest && notifyDigital;
+      const overallSuccess = notifyTest && notifyDigital;
 
-    console.log(`📤 ส่งแจ้งเตือน → Test: ${notifyTest} | Digital: ${notifyDigital}`);
+      console.log(
+        `📤 ส่งแจ้งเตือน → Test: ${notifyTest} | Digital: ${notifyDigital}`,
+      );
 
-    return {
-      success: overallSuccess,
-      staff,
-      intern,
-      dateRange,
-      message,
-      sentToTest: notifyTest,
-      sentToDigital: notifyDigital,
-    };
-  } catch (error) {
-    console.error("❌ ExampleService.triggerReport Error:", error);
-    throw error;
+      return {
+        success: overallSuccess,
+        staff,
+        intern,
+        dateRange,
+        message,
+        sentToTest: notifyTest,
+        sentToDigital: notifyDigital,
+      };
+    } catch (error) {
+      console.error("❌ ExampleService.triggerReport Error:", error);
+      throw error;
+    }
   }
-}
 }

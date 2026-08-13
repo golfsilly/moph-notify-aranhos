@@ -1,7 +1,7 @@
 import { queryHos } from "@/lib/hosdb";
-import { LineNotifyService } from "../line-notify.service";
-import { RowDataPacket } from "mysql2";
 import { RentIptRow } from "@/types/rent-ipt.type";
+import { RowDataPacket } from "mysql2";
+import { LineNotifyService } from "../line-notify.service";
 
 type DateRange = {
   start: string;
@@ -94,7 +94,7 @@ export class RentIptAllService {
     endDate.setDate(endDate.getDate() - 5);
 
     const dateRange: DateRange = {
-      start: "2026-05-01",
+      start: "2026-07-01",
       end: endDate.toISOString().split("T")[0]!,
       today: thaiNow.toISOString().split("T")[0]!,
     };
@@ -176,10 +176,10 @@ export class RentIptAllService {
       throw error;
     }
   }
-    static async multitriggerReport() {
+  static async multitriggerReport() {
     try {
       const { staff, intern, dateRange } = await RentIptAllService.getSummary();
-  
+
       const message = createMessage(
         intern,
         staff,
@@ -187,17 +187,19 @@ export class RentIptAllService {
         dateRange.start,
         dateRange.end,
       );
-  
+
       // ส่ง 2 กลุ่มพร้อมกัน (แนะนำ)
       const [notifyTest, notifyDigital] = await Promise.all([
         LineNotifyService.sendToTest(message),
         LineNotifyService.sendToTest(message),
       ]);
-  
+
       const overallSuccess = notifyTest && notifyDigital;
-  
-      console.log(`📤 ส่งแจ้งเตือน → Test: ${notifyTest} | Digital: ${notifyDigital}`);
-  
+
+      console.log(
+        `📤 ส่งแจ้งเตือน → Test: ${notifyTest} | Digital: ${notifyDigital}`,
+      );
+
       return {
         success: overallSuccess,
         staff,

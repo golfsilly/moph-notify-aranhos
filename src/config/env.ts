@@ -3,7 +3,9 @@ import { z } from "zod";
 
 const env = createEnv({
   server: {
-    NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+    NODE_ENV: z
+      .enum(["development", "production", "test"])
+      .default("development"),
     PORT: z.coerce.number().int().positive().default(50000),
 
     // === Database ===
@@ -17,15 +19,20 @@ const env = createEnv({
     HOS_DB_RCM_NAME: z.string().min(1, "HOS_DB_RCM_NAME is required"),
     HOS_DB_REFER_NAME: z.string().min(1, "HOS_DB_REFER_NAME is required"),
 
-    CRON_TOKEN:z.string().min(32, "CRON_TOKEN must be at least 32 characters"),
-    CRON_SECRET:z.string().min(32, "CRON_SECRET must be at least 32 characters"),
+    CRON_TOKEN: z.string().min(32, "CRON_TOKEN must be at least 32 characters"),
+    CRON_SECRET: z
+      .string()
+      .min(32, "CRON_SECRET must be at least 32 characters"),
     ALLOWED_CRON_IPS: z.string().optional(),
 
-    // Line Notify (optional)   
+    // Line Notify (optional)
     LINE_NOTIFY_ENDPOINT: z.url(),
 
     LINE_NOTIFY_TEST_CLIENT_KEY: z.string().optional(),
     LINE_NOTIFY_TEST_SECRET_KEY: z.string().optional(),
+
+    LINE_NOTIFY_XRAY_PORTABLE_CLIENT_KEY: z.string().optional(),
+    LINE_NOTIFY_XRAY_PORTABLE_SECRET_KEY: z.string().optional(),
 
     LINE_NOTIFY_RENT_IPT_STAFF_CLIENT_KEY: z.string().optional(),
     LINE_NOTIFY_RENT_IPT_STAFF_SECRET_KEY: z.string().optional(),
@@ -74,23 +81,36 @@ const env = createEnv({
     LINE_NOTIFY_TEST_CLIENT_KEY: process.env.LINE_NOTIFY_TEST_CLIENT_KEY,
     LINE_NOTIFY_TEST_SECRET_KEY: process.env.LINE_NOTIFY_TEST_SECRET_KEY,
 
-    LINE_NOTIFY_RENT_IPT_STAFF_CLIENT_KEY: process.env.LINE_NOTIFY_RENT_IPT_STAFF_CLIENT_KEY,
-    LINE_NOTIFY_RENT_IPT_STAFF_SECRET_KEY: process.env.LINE_NOTIFY_RENT_IPT_STAFF_SECRET_KEY,
+    LINE_NOTIFY_XRAY_PORTABLE_CLIENT_KEY:
+      process.env.LINE_NOTIFY_XRAY_PORTABLE_CLIENT_KEY,
+    LINE_NOTIFY_XRAY_PORTABLE_SECRET_KEY:
+      process.env.LINE_NOTIFY_XRAY_PORTABLE_SECRET_KEY,
 
-    LINE_NOTIFY_RENT_IPT_INTERN_CLIENT_KEY: process.env.LINE_NOTIFY_RENT_IPT_INTERN_CLIENT_KEY,
-    LINE_NOTIFY_RENT_IPT_INTERN_SECRET_KEY: process.env.LINE_NOTIFY_RENT_IPT_INTERN_SECRET_KEY,
+    LINE_NOTIFY_RENT_IPT_STAFF_CLIENT_KEY:
+      process.env.LINE_NOTIFY_RENT_IPT_STAFF_CLIENT_KEY,
+    LINE_NOTIFY_RENT_IPT_STAFF_SECRET_KEY:
+      process.env.LINE_NOTIFY_RENT_IPT_STAFF_SECRET_KEY,
+
+    LINE_NOTIFY_RENT_IPT_INTERN_CLIENT_KEY:
+      process.env.LINE_NOTIFY_RENT_IPT_INTERN_CLIENT_KEY,
+    LINE_NOTIFY_RENT_IPT_INTERN_SECRET_KEY:
+      process.env.LINE_NOTIFY_RENT_IPT_INTERN_SECRET_KEY,
 
     LINE_NOTIFY_DIGITAL_CLIENT_KEY: process.env.LINE_NOTIFY_DIGITAL_CLIENT_KEY,
     LINE_NOTIFY_DIGITAL_SECRET_KEY: process.env.LINE_NOTIFY_DIGITAL_SECRET_KEY,
 
-    LINE_NOTIFY_DIGITAL_MISSION_CLIENT_KEY: process.env.LINE_NOTIFY_DIGITAL_MISSION_CLIENT_KEY,
-    LINE_NOTIFY_DIGITAL_MISSION_SECRET_KEY: process.env.LINE_NOTIFY_DIGITAL_MISSION_SECRET_KEY,
+    LINE_NOTIFY_DIGITAL_MISSION_CLIENT_KEY:
+      process.env.LINE_NOTIFY_DIGITAL_MISSION_CLIENT_KEY,
+    LINE_NOTIFY_DIGITAL_MISSION_SECRET_KEY:
+      process.env.LINE_NOTIFY_DIGITAL_MISSION_SECRET_KEY,
 
     LINE_NOTIFY_BOD_CLIENT_KEY: process.env.LINE_NOTIFY_BOD_CLIENT_KEY,
     LINE_NOTIFY_BOD_SECRET_KEY: process.env.LINE_NOTIFY_BOD_SECRET_KEY,
 
-    LINE_NOTIFY_HOSPITAL_CLIENT_KEY: process.env.LINE_NOTIFY_HOSPITAL_CLIENT_KEY,
-    LINE_NOTIFY_HOSPITAL_SECRET_KEY: process.env.LINE_NOTIFY_HOSPITAL_SECRET_KEY,
+    LINE_NOTIFY_HOSPITAL_CLIENT_KEY:
+      process.env.LINE_NOTIFY_HOSPITAL_CLIENT_KEY,
+    LINE_NOTIFY_HOSPITAL_SECRET_KEY:
+      process.env.LINE_NOTIFY_HOSPITAL_SECRET_KEY,
   },
 
   emptyStringAsUndefined: true,
@@ -132,14 +152,17 @@ export const ENV = {
 
   cronToken: env.CRON_TOKEN,
   cronSecret: env.CRON_SECRET,
-  allowedCronIps: env.ALLOWED_CRON_IPS?.split(",").map(ip => ip.trim()) ?? [],
-  
+  allowedCronIps: env.ALLOWED_CRON_IPS?.split(",").map((ip) => ip.trim()) ?? [],
 
   lineNotify: {
     endpoint: env.LINE_NOTIFY_ENDPOINT,
     test: {
       clientKey: env.LINE_NOTIFY_TEST_CLIENT_KEY ?? "",
       secretKey: env.LINE_NOTIFY_TEST_SECRET_KEY ?? "",
+    },
+    xrayPortable: {
+      clientKey: env.LINE_NOTIFY_XRAY_PORTABLE_CLIENT_KEY ?? "",
+      secretKey: env.LINE_NOTIFY_XRAY_PORTABLE_SECRET_KEY ?? "",
     },
     rentIptStaff: {
       clientKey: env.LINE_NOTIFY_RENT_IPT_STAFF_CLIENT_KEY ?? "",

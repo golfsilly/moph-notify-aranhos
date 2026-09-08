@@ -11,7 +11,7 @@ const TOKEN = ENV.cronToken;
 const SECRET = ENV.cronSecret;
 
 const CONFIG = {
-  startDate: "2026-07-01",
+  startDate: "2026-08-01",
   endpoint: "https://morpromt2f.moph.go.th/api/notify/send",
   clientKey: ENV.lineNotify.test.clientKey,
   secretKey: ENV.lineNotify.test.secretKey,

@@ -6,14 +6,25 @@
     "dev": "next dev -p 50000",
     "build": "next build && cpx \".next/static/**/*\" \".next/standalone/.next/static\" && cpx \"public/**/*\" \".next/standalone/public\"",
     "start": "cross-env PORT=50000 node .next/standalone/server.js",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:push": "prisma db push",
+    "prisma:pull": "prisma db pull",
+    "prisma:studio": "prisma studio",
+    "prisma:reset": "prisma migrate reset",
+    "prisma:format": "prisma format",
+    "prisma:seed": "node --loader tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@prisma/adapter-mariadb": "^7.10.0",
     "@t3-oss/env-nextjs": "^0.13.11",
     "@tanstack/react-query": "^5.101.1",
     "date-fns": "^4.4.0",
     "lodash": "^4.18.1",
     "lucide-react": "^1.22.0",
+    "mariadb": "^3.5.4",
     "mysql2": "^3.22.5",
     "next": "16.2.9",
     "node-cron": "^4.5.0",
@@ -26,6 +37,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@prisma/client": "^7.10.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
@@ -34,9 +46,12 @@
     "babel-plugin-react-compiler": "1.0.0",
     "cpx2": "^9.0.0",
     "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "prisma": "^7.10.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

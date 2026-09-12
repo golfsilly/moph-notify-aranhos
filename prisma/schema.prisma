@@ -1,0 +1,44 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum NotificationStatus {
+  PENDING
+  PROCESSING
+  FAILED
+  SENT
+}
+
+model XrayPortableCursor {
+  jobName       String   @id @map("job_name") @db.VarChar(64)
+  lastXn        BigInt   @map("last_xn")
+  initializedAt DateTime @default(now()) @map("initialized_at") @db.DateTime(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  @@map("xray_portable_cursors")
+}
+
+model XrayPortableNotification {
+  sourceXn            BigInt             @id @map("source_xn")
+  itemCode            Int                @map("item_code")
+  targetGroup         String             @default("test") @map("target_group") @db.VarChar(32)
+  status              NotificationStatus @default(PENDING)
+  attempts            Int                @default(0)
+  nextAttemptAt       DateTime           @default(now()) @map("next_attempt_at") @db.DateTime(3)
+  processingToken     String?            @map("processing_token") @db.VarChar(36)
+  processingStartedAt DateTime?          @map("processing_started_at") @db.DateTime(3)
+  sentAt              DateTime?          @map("sent_at") @db.DateTime(3)
+  lastError           String?            @map("last_error") @db.VarChar(500)
+  createdAt           DateTime           @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt           DateTime           @updatedAt @map("updated_at") @db.DateTime(3)
+
+  @@index([status, nextAttemptAt], map: "idx_xray_portable_due")
+  @@index([status, processingStartedAt], map: "idx_xray_portable_stale")
+  @@map("xray_portable_notifications")
+}

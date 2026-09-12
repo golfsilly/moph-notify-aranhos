@@ -19,6 +19,8 @@ const env = createEnv({
     HOS_DB_RCM_NAME: z.string().min(1, "HOS_DB_RCM_NAME is required"),
     HOS_DB_REFER_NAME: z.string().min(1, "HOS_DB_REFER_NAME is required"),
 
+    DATABASE_URL: z.string().optional(),
+
     CRON_TOKEN: z.string().min(32, "CRON_TOKEN must be at least 32 characters"),
     CRON_SECRET: z
       .string()
@@ -61,6 +63,8 @@ const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+
+    DATABASE_URL: process.env.DATABASE_URL,
 
     HOS_DB_HOST: process.env.HOS_DB_HOST,
     HOS_DB_HOST_SLAVE: process.env.HOS_DB_HOST_SLAVE,
@@ -124,6 +128,8 @@ export const ENV = {
 
   port: env.PORT,
   appUrl: env.NEXT_PUBLIC_APP_URL,
+
+  databaseUrl: env.DATABASE_URL ?? "",
 
   hosdb: {
     host: env.HOS_DB_HOST,

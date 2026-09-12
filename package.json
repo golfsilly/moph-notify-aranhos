@@ -4,14 +4,24 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 50000",
-    "build": "next build && cpx \".next/static/**/*\" \".next/standalone/.next/static\" && cpx \"public/**/*\" \".next/standalone/public\"",
+    "build": "prisma generate && next build && cpx \".next/static/**/*\" \".next/standalone/.next/static\" && cpx \"public/**/*\" \".next/standalone/public\"",
     "start": "cross-env PORT=50000 node .next/standalone/server.js",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/services/patient-xray-portable/patient-xray-portable.service.test.ts",
+    "db:create": "tsx src/scripts/create-moph-notify-database.ts",
+    "db:generate": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@prisma/adapter-mariadb": "7.10.0",
+    "@prisma/client": "7.10.0",
     "@t3-oss/env-nextjs": "^0.13.11",
     "@tanstack/react-query": "^5.101.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "dotenv": "^17.4.2",
     "lodash": "^4.18.1",
     "lucide-react": "^1.22.0",
     "mysql2": "^3.22.5",
@@ -36,7 +46,9 @@
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "prisma": "7.10.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

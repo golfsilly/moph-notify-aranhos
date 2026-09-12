@@ -2,6 +2,7 @@ import { ENV } from "@/config/env";
 
 type LineGroup =
   | "test"
+  | "xray-portable"
   | "rent-ipt-staff"
   | "rent-ipt-intern"
   | "digital"
@@ -27,6 +28,12 @@ export class LineNotifyService {
     retry: number = 3,
   ): Promise<boolean> {
     return this.sendToGroup("test", message, retry);
+  }
+  static async sendToXrayPortable(
+    message: string,
+    retry: number = 3,
+  ): Promise<boolean> {
+    return this.sendToGroup("xray-portable", message, retry);
   }
   static async sendToRentIptStaff(
     message: string,
@@ -80,6 +87,9 @@ export class LineNotifyService {
     switch (group) {
       case "test":
         config = ENV.lineNotify.test;
+        break;
+      case "xray-portable":
+        config = ENV.lineNotify.xrayPortable;
         break;
       case "rent-ipt-staff":
         config = ENV.lineNotify.rentIptStaff;

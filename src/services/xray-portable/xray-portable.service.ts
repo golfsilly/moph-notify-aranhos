@@ -93,12 +93,12 @@ function createXrayAlertMessage(xrayCase: XrayCase): string {
   return [
     "🏥 X-RAY PORTABLE ALERT",
     divider,
-    `🏢 แผนก      : ${xrayCase.department_name}`,
-    `👤 ผู้ป่วย HN  : ${xrayCase.hn} (อายุ ${xrayCase.age} ปี)`,
-    `📊 VN         : ${xrayCase.vn}`,
-    `📋 XN         : ${xrayCase.xn}`,
-    `📅 วันที่สั่ง   : ${orderDate}`,
-    `🕐 เวลาสั่ง    : ${orderTime}`,
+    `🏢 แผนก: ${xrayCase.department_name}`,
+    `👤 ผู้ป่วย HN: ${xrayCase.hn} (อายุ ${xrayCase.age} ปี)`,
+    `📊 VN: ${xrayCase.vn}`,
+    `📋 XN: ${xrayCase.xn}`,
+    `📅 วันที่สั่ง: ${orderDate}`,
+    `🕐 เวลาสั่ง: ${orderTime}`,
     divider,
     `📝 รายการตรวจ (${itemCount} รายการ)`,
     formatXrayItems(xrayCase.xray_list),
@@ -154,7 +154,7 @@ export class XrayPortableService {
    * Query X-ray cases from hosxp database with a time window
    * @param minutesBack How many minutes back to look (default: 5 for 5-min cron)
    */
-  private static buildXraySql(minutesBack: number = 60): string {
+  private static buildXraySql(minutesBack: number = 5): string {
     return `
     SELECT
   xh.pt_xn AS xn,
@@ -200,8 +200,8 @@ ORDER BY
     let failedNotifications = 0;
 
     try {
-      // Query hosxp for recent X-ray cases (last 3 minutes)
-      const xrayRows = await queryHos(this.buildXraySql(60));
+      // Query hosxp for recent X-ray cases (last 5 minutes)
+      const xrayRows = await queryHos(this.buildXraySql(5));
       const xrayCases = toXrayCases(xrayRows);
 
       totalCasesFound = xrayCases.length;

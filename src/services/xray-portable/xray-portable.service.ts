@@ -43,6 +43,13 @@ function formatThaiShort(dateStr: string): string {
   return `${date.getDate()} ${thaiMonths[date.getMonth()]} ${date.getFullYear() + 543}`;
 }
 
+function formatThaiTimeNow(): string {
+  const now = getThaiTime();
+  const hh = String(now.getUTCHours()).padStart(2, "0");
+  const mm = String(now.getUTCMinutes()).padStart(2, "0");
+  return `${hh}:${mm} น.`;
+}
+
 function toXrayCases(rows: RowDataPacket[]): XrayCase[] {
   return rows.map((row) => ({
     xn: Number(row.xn),
@@ -57,20 +64,85 @@ function toXrayCases(rows: RowDataPacket[]): XrayCase[] {
   }));
 }
 
+/**
+ * Split the raw comma-separated xray_list into a clean bullet list.
+ */
+function formatXrayItems(xrayList: string): string {
+  const items = xrayList
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (items.length === 0) {
+    return "  • ไม่ระบุรายการ";
+  }
+
+  return items.map((item) => `  • ${item}`).join("\n");
+}
+
+/**
+ * Build a single, well-structured LINE alert for one new X-ray case.
+ */
 function createXrayAlertMessage(xrayCase: XrayCase): string {
   const orderDate = formatThaiShort(xrayCase.order_date);
   const orderTime =
     xrayCase.order_date_time.split(" ")[1]?.substring(0, 5) || "N/A";
+  const itemCount = xrayCase.xray_list.split(",").filter(Boolean).length;
+  const divider = "━━━━━━━━━━━━━━";
 
-  return `🏥 X-ray Alert
+  return [
+    "🏥 X-RAY PORTABLE ALERT",
+    divider,
+    `🏢 แผนก      : ${xrayCase.department_name}`,
+    `👤 ผู้ป่วย HN  : ${xrayCase.hn} (อายุ ${xrayCase.age} ปี)`,
+    `📊 VN         : ${xrayCase.vn}`,
+    `📋 XN         : ${xrayCase.xn}`,
+    `📅 วันที่สั่ง   : ${orderDate}`,
+    `🕐 เวลาสั่ง    : ${orderTime}`,
+    divider,
+    `📝 รายการตรวจ (${itemCount} รายการ)`,
+    formatXrayItems(xrayCase.xray_list),
+    divider,
+    `🔔 แจ้งเตือนเมื่อ ${formatThaiTimeNow()}`,
+  ].join("\n");
+}
 
-📋 XN: ${xrayCase.xn}
-📊 VN: ${xrayCase.vn}
-👤 HN: ${xrayCase.hn} (Age: ${xrayCase.age})
-🏢 Department: ${xrayCase.department_name}
-📅 Date: ${orderDate}
-🕐 Time: ${orderTime}
-📝 Items: ${xrayCase.xray_list.split(",").length} items`;
+/**
+ * Build a summary message for the whole batch/cron run.
+ * Sent once per run instead of only relying on per-case messages,
+ * so ops can see at a glance whether anything failed.
+ */
+function createBatchSummaryMessage(result: {
+  totalCasesFound: number;
+  newCasesCount: number;
+  duplicateCasesCount: number;
+  notificationsSent: number;
+  failedNotifications: number;
+  durationMs: number;
+}): string {
+  const {
+    totalCasesFound,
+    newCasesCount,
+    duplicateCasesCount,
+    notificationsSent,
+    failedNotifications,
+    durationMs,
+  } = result;
+
+  const statusIcon = failedNotifications > 0 ? "⚠️" : "✅";
+  const divider = "━━━━━━━━━━━━━━";
+
+  return [
+    `${statusIcon} X-RAY PORTABLE — สรุปรอบตรวจสอบ`,
+    divider,
+    `🔎 พบเคสทั้งหมด     : ${totalCasesFound}`,
+    `🆕 เคสใหม่          : ${newCasesCount}`,
+    `♻️ เคสซ้ำ (ข้าม)     : ${duplicateCasesCount}`,
+    `📤 แจ้งเตือนสำเร็จ  : ${notificationsSent}`,
+    `❌ แจ้งเตือนล้มเหลว : ${failedNotifications}`,
+    divider,
+    `⏱️ ใช้เวลา ${durationMs} ms | ${formatThaiTimeNow()}`,
+  ].join("\n");
 }
 
 // ======================================================
@@ -229,6 +301,24 @@ ORDER BY
       }
 
       const duration = Date.now() - startTime;
+
+      // Send one consolidated summary so ops can see the whole run at a glance
+      try {
+        const summaryMessage = createBatchSummaryMessage({
+          totalCasesFound,
+          newCasesCount,
+          duplicateCasesCount,
+          notificationsSent,
+          failedNotifications,
+          durationMs: duration,
+        });
+        await LineNotifyService.sendToTest(summaryMessage);
+      } catch (summaryError) {
+        console.error(
+          "⚠️ [XrayService] Failed to send batch summary message:",
+          summaryError,
+        );
+      }
 
       return {
         totalCasesFound,

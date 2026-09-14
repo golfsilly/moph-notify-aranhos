@@ -50,6 +50,25 @@ function formatThaiTimeNow(): string {
   return `${hh}:${mm} น.`;
 }
 
+function formatThaiDateNow(): string {
+  const now = getThaiTime();
+  const thaiMonths = [
+    "ม.ค.",
+    "ก.พ.",
+    "มี.ค.",
+    "เม.ย.",
+    "พ.ค.",
+    "มิ.ย.",
+    "ก.ค.",
+    "ส.ค.",
+    "ก.ย.",
+    "ต.ค.",
+    "พ.ย.",
+    "ธ.ค.",
+  ];
+  return `${now.getUTCDate()} ${thaiMonths[now.getUTCMonth()]} ${now.getUTCFullYear() + 543}`;
+}
+
 function toXrayCases(rows: RowDataPacket[]): XrayCase[] {
   return rows.map((row) => ({
     xn: Number(row.xn),
@@ -107,41 +126,77 @@ function createXrayAlertMessage(xrayCase: XrayCase): string {
   ].join("\n");
 }
 
-/**
- * Build a summary message for the whole batch/cron run.
- * Sent once per run instead of only relying on per-case messages,
- * so ops can see at a glance whether anything failed.
- */
-function createBatchSummaryMessage(result: {
+// ======================================================
+// Daily Stats Accumulator
+// ======================================================
+// Instead of firing a summary message after every 3-minute cron tick, we
+// accumulate counts here across all runs in a day. A separate daily cron
+// (registered in index.ts, e.g. 16:00) calls sendDailySummaryAndReset()
+// to flush one consolidated report and start counting fresh.
+
+interface DailyStats {
+  dateLabel: string;
+  runsCount: number;
   totalCasesFound: number;
   newCasesCount: number;
   duplicateCasesCount: number;
   notificationsSent: number;
   failedNotifications: number;
-  durationMs: number;
-}): string {
-  const {
-    totalCasesFound,
-    newCasesCount,
-    duplicateCasesCount,
-    notificationsSent,
-    failedNotifications,
-    durationMs,
-  } = result;
+  firstRunAt: string | null;
+  lastRunAt: string | null;
+}
 
-  const statusIcon = failedNotifications > 0 ? "⚠️" : "✅";
+function emptyDailyStats(): DailyStats {
+  return {
+    dateLabel: formatThaiDateNow(),
+    runsCount: 0,
+    totalCasesFound: 0,
+    newCasesCount: 0,
+    duplicateCasesCount: 0,
+    notificationsSent: 0,
+    failedNotifications: 0,
+    firstRunAt: null,
+    lastRunAt: null,
+  };
+}
+
+let dailyStats: DailyStats = emptyDailyStats();
+
+function accumulateDailyStats(run: {
+  totalCasesFound: number;
+  newCasesCount: number;
+  duplicateCasesCount: number;
+  notificationsSent: number;
+  failedNotifications: number;
+}) {
+  const now = formatThaiTimeNow();
+
+  dailyStats.runsCount += 1;
+  dailyStats.totalCasesFound += run.totalCasesFound;
+  dailyStats.newCasesCount += run.newCasesCount;
+  dailyStats.duplicateCasesCount += run.duplicateCasesCount;
+  dailyStats.notificationsSent += run.notificationsSent;
+  dailyStats.failedNotifications += run.failedNotifications;
+  dailyStats.firstRunAt = dailyStats.firstRunAt ?? now;
+  dailyStats.lastRunAt = now;
+}
+
+function createDailySummaryMessage(stats: DailyStats): string {
+  const statusIcon = stats.failedNotifications > 0 ? "⚠️" : "✅";
   const divider = "━━━━━━━━━━━━━━";
 
   return [
-    `${statusIcon} X-RAY PORTABLE — สรุปรอบตรวจสอบ`,
+    `${statusIcon} X-RAY PORTABLE — สรุปประจำวัน`,
+    `📆 ${stats.dateLabel}`,
     divider,
-    `🔎 พบเคสทั้งหมด     : ${totalCasesFound}`,
-    `🆕 เคสใหม่          : ${newCasesCount}`,
-    `♻️ เคสซ้ำ (ข้าม)     : ${duplicateCasesCount}`,
-    `📤 แจ้งเตือนสำเร็จ  : ${notificationsSent}`,
-    `❌ แจ้งเตือนล้มเหลว : ${failedNotifications}`,
+    `🔁 จำนวนรอบตรวจสอบ  : ${stats.runsCount}`,
+    `🔎 พบเคสทั้งหมด      : ${stats.totalCasesFound}`,
+    `🆕 เคสใหม่           : ${stats.newCasesCount}`,
+    `♻️ เคสซ้ำ (ข้าม)      : ${stats.duplicateCasesCount}`,
+    `📤 แจ้งเตือนสำเร็จ   : ${stats.notificationsSent}`,
+    `❌ แจ้งเตือนล้มเหลว  : ${stats.failedNotifications}`,
     divider,
-    `⏱️ ใช้เวลา ${durationMs} ms | ${formatThaiTimeNow()}`,
+    `🕐 รอบแรก : ${stats.firstRunAt ?? "-"}   🕓 รอบล่าสุด : ${stats.lastRunAt ?? "-"}`,
   ].join("\n");
 }
 
@@ -206,10 +261,18 @@ ORDER BY
 
       totalCasesFound = xrayCases.length;
       console.log(
-        `📊 [XrayService] Found ${totalCasesFound} X-ray cases in last 3 minutes`,
+        `📊 [XrayService] Found ${totalCasesFound} X-ray cases in last 5 minutes`,
       );
 
       if (totalCasesFound === 0) {
+        accumulateDailyStats({
+          totalCasesFound: 0,
+          newCasesCount: 0,
+          duplicateCasesCount: 0,
+          notificationsSent: 0,
+          failedNotifications: 0,
+        });
+
         return {
           totalCasesFound: 0,
           newCases: [],
@@ -243,6 +306,14 @@ ORDER BY
       );
 
       if (newCasesCount === 0) {
+        accumulateDailyStats({
+          totalCasesFound,
+          newCasesCount: 0,
+          duplicateCasesCount,
+          notificationsSent: 0,
+          failedNotifications: 0,
+        });
+
         return {
           totalCasesFound,
           newCases: [],
@@ -302,23 +373,15 @@ ORDER BY
 
       const duration = Date.now() - startTime;
 
-      // Send one consolidated summary so ops can see the whole run at a glance
-      try {
-        const summaryMessage = createBatchSummaryMessage({
-          totalCasesFound,
-          newCasesCount,
-          duplicateCasesCount,
-          notificationsSent,
-          failedNotifications,
-          durationMs: duration,
-        });
-        await LineNotifyService.sendToTest(summaryMessage);
-      } catch (summaryError) {
-        console.error(
-          "⚠️ [XrayService] Failed to send batch summary message:",
-          summaryError,
-        );
-      }
+      // Roll this run's numbers into the daily total instead of sending a
+      // per-run LINE summary. The daily cron flushes it at 16:00.
+      accumulateDailyStats({
+        totalCasesFound,
+        newCasesCount,
+        duplicateCasesCount,
+        notificationsSent,
+        failedNotifications,
+      });
 
       return {
         totalCasesFound,
@@ -331,6 +394,33 @@ ORDER BY
     } catch (error) {
       console.error("❌ [XrayService] checkAndNotifyNewCases Error:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Send the accumulated daily summary to LINE, then reset counters for
+   * the next day. Intended to be called once per day (e.g. 16:00) by a
+   * dedicated cron job in index.ts.
+   */
+  static async sendDailySummaryAndReset(): Promise<void> {
+    const snapshot = dailyStats;
+
+    try {
+      const message = createDailySummaryMessage(snapshot);
+      await LineNotifyService.sendToTest(message);
+      console.log(
+        `📨 [XrayService] Sent daily summary | runs=${snapshot.runsCount} new=${snapshot.newCasesCount} failed=${snapshot.failedNotifications}`,
+      );
+    } catch (error) {
+      console.error(
+        "⚠️ [XrayService] Failed to send daily summary message:",
+        error,
+      );
+      throw error;
+    } finally {
+      // Reset regardless of send success so stats don't leak into tomorrow
+      // and double-count on the next flush.
+      dailyStats = emptyDailyStats();
     }
   }
 

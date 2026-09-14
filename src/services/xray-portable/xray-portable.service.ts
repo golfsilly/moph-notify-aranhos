@@ -69,6 +69,17 @@ function formatThaiDateNow(): string {
   return `${now.getUTCDate()} ${thaiMonths[now.getUTCMonth()]} ${now.getUTCFullYear() + 543}`;
 }
 
+/**
+ * True if a value from the DB is actually usable (not null/undefined,
+ * not an empty/whitespace string). Used to decide whether an optional
+ * field (bed number, AN, patient name) gets its own line in the alert.
+ */
+function hasValue(value: unknown): value is string | number {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  return true;
+}
+
 function toXrayCases(rows: RowDataPacket[]): XrayCase[] {
   return rows.map((row) => ({
     xn: Number(row.xn),
@@ -80,6 +91,16 @@ function toXrayCases(rows: RowDataPacket[]): XrayCase[] {
     department_name: row.department_name as string,
     xray_list: row.xray_list as string,
     notify_key: row.notify_key as string,
+    // Optional — patient may not be an inpatient / may not have a bed
+    // assigned yet, so these can legitimately be null.
+    bedno: hasValue(row.bedno) ? (row.bedno as string) : null,
+    an: hasValue(row.an) ? String(row.an) : null,
+    // Prefix + first + last name combined via CONCAT_WS in SQL (skips
+    // NULL parts already), but can still come back empty if the patient
+    // record has no name fields set at all.
+    patient_name: hasValue(row.patient_name)
+      ? (row.patient_name as string)
+      : null,
   }));
 }
 
@@ -101,6 +122,8 @@ function formatXrayItems(xrayList: string): string {
 
 /**
  * Build a single, well-structured LINE alert for one new X-ray case.
+ * Optional fields (patient name, bed number) only appear when the case
+ * actually has that data — no "field: -" placeholders.
  */
 function createXrayAlertMessage(xrayCase: XrayCase): string {
   const orderDate = formatThaiShort(xrayCase.order_date);
@@ -109,13 +132,19 @@ function createXrayAlertMessage(xrayCase: XrayCase): string {
   const itemCount = xrayCase.xray_list.split(",").filter(Boolean).length;
   const divider = "━━━━━━━━━━━━━━";
 
-  return [
+  const lines: string[] = [
     "🏥 X-RAY PORTABLE ALERT",
     divider,
-    `🏢 แผนก: ${xrayCase.department_name}`,
-    `👤 ผู้ป่วย HN: ${xrayCase.hn} (อายุ ${xrayCase.age} ปี)`,
-    `📊 VN: ${xrayCase.vn}`,
     `📋 XN: ${xrayCase.xn}`,
+    `👤 HN: ${xrayCase.hn}`,
+    `👤 ${xrayCase.patient_name} (${xrayCase.age} ปี)`,
+    `🏢 สั่งจาก: ${xrayCase.department_name}`,
+  ];
+  if (hasValue(xrayCase.bedno)) {
+    lines.push(`🛏️ เตียง: ${xrayCase.bedno}`);
+  }
+
+  lines.push(
     `📅 วันที่สั่ง: ${orderDate}`,
     `🕐 เวลาสั่ง: ${orderTime}`,
     divider,
@@ -123,13 +152,15 @@ function createXrayAlertMessage(xrayCase: XrayCase): string {
     formatXrayItems(xrayCase.xray_list),
     divider,
     `🔔 แจ้งเตือนเมื่อ ${formatThaiTimeNow()}`,
-  ].join("\n");
+  );
+
+  return lines.join("\n");
 }
 
 // ======================================================
 // Daily Stats Accumulator
 // ======================================================
-// Instead of firing a summary message after every 3-minute cron tick, we
+// Instead of firing a summary message after every 60-minute cron tick, we
 // accumulate counts here across all runs in a day. A separate daily cron
 // (registered in index.ts, e.g. 16:00) calls sendDailySummaryAndReset()
 // to flush one consolidated report and start counting fresh.
@@ -161,6 +192,46 @@ function emptyDailyStats(): DailyStats {
 }
 
 let dailyStats: DailyStats = emptyDailyStats();
+
+// ======================================================
+// Gap-safe lookback window
+// ======================================================
+// The cron runs every 60 minutes, so a fixed "look back 60 minutes" window
+// normally lines up perfectly. But if a run throws (e.g. a transient HOS
+// connection blip) it queries nothing for that tick — and the *next*
+// successful run would still only look back 60 minutes, silently skipping
+// whatever arrived during the failed window.
+//
+// Instead, we remember when we last *successfully* queried and look back
+// far enough to cover the full gap since then, with a floor (don't look
+// back less than the normal window) and a ceiling (don't accidentally
+// pull hours of data if the service was down for a long time).
+
+const MIN_LOOKBACK_MINUTES = 60;
+const MAX_LOOKBACK_MINUTES = 120;
+
+let lastSuccessfulCheckAt: Date | null = null;
+
+function computeLookbackMinutes(): number {
+  if (!lastSuccessfulCheckAt) {
+    return MIN_LOOKBACK_MINUTES;
+  }
+
+  const elapsedMinutes = Math.ceil(
+    (Date.now() - lastSuccessfulCheckAt.getTime()) / 60_000,
+  );
+
+  const lookback = Math.max(MIN_LOOKBACK_MINUTES, elapsedMinutes);
+
+  if (lookback > MAX_LOOKBACK_MINUTES) {
+    console.warn(
+      `⚠️ [XrayService] Gap since last successful check is ${elapsedMinutes}min — capping lookback to ${MAX_LOOKBACK_MINUTES}min`,
+    );
+    return MAX_LOOKBACK_MINUTES;
+  }
+
+  return lookback;
+}
 
 function accumulateDailyStats(run: {
   totalCasesFound: number;
@@ -209,7 +280,7 @@ export class XrayPortableService {
    * Query X-ray cases from hosxp database with a time window
    * @param minutesBack How many minutes back to look (default: 5 for 5-min cron)
    */
-  private static buildXraySql(minutesBack: number = 5): string {
+  private static buildXraySql(minutesBack: number = 60): string {
     return `
     SELECT
   xh.pt_xn AS xn,
@@ -219,26 +290,33 @@ export class XrayPortableService {
   DATE_FORMAT( xh.order_date_time, '%Y-%m-%d %H:%i:%s' ) AS order_date_time,
   xh.age_y AS age,
   COALESCE ( xh.department_name, 'Unknown' ) AS department_name,
-  CAST(
-  xh.xray_list AS CHAR ( 10000 )) AS xray_list,
+  CONCAT_WS( ' ', p.pname, p.fname, p.lname ) AS patient_name,
+  i.an,
+  ia.bedno,
+  CAST( xh.xray_list AS CHAR ( 10000 ) ) AS xray_list,
   MD5(
     CONCAT(
-      COALESCE ( xh.vn, '' ),
+      COALESCE ( xh.pt_xn, '' ),
       '|',
       COALESCE ( xh.hn, '' ),
       '|',
-      COALESCE ( xh.order_date, '' ),
+      COALESCE ( i.an, '' ),
       '|',
-      COALESCE ( CAST( xh.xray_list AS CHAR ( 10000 )), '' ) 
-    )) AS notify_key 
+      COALESCE ( xh.order_date_time, '' ) 
+    ) 
+  ) AS notify_key 
 FROM
   xray_head xh
-  LEFT JOIN patient p ON p.hn = xh.hn 
+  LEFT JOIN patient p ON p.hn = xh.hn
+  LEFT JOIN ipt i ON i.hn = xh.hn 
+  AND xh.order_date_time >= TIMESTAMP ( i.regdate, COALESCE ( i.regtime, '00:00:00' ) ) 
+  AND ( i.dchdate IS NULL OR xh.order_date_time <= TIMESTAMP ( i.dchdate, COALESCE ( i.dchtime, '23:59:59' ) ) )
+  LEFT JOIN iptadm ia ON ia.an = i.an 
 WHERE
-  xh.order_date_time >= DATE_SUB(NOW(), INTERVAL ${minutesBack} MINUTE)
-  AND xh.xray_list LIKE '%portable%'
+  xh.order_date_time >= DATE_SUB( NOW(), INTERVAL ${minutesBack} MINUTE ) 
+  AND xh.xray_list LIKE '%portable%' 
 ORDER BY
-  xh.order_date DESC;
+  xh.order_date_time DESC;
     `;
   }
 
@@ -255,14 +333,21 @@ ORDER BY
     let failedNotifications = 0;
 
     try {
-      // Query hosxp for recent X-ray cases (last 5 minutes)
-      const xrayRows = await queryHos(this.buildXraySql(5));
+      // Query hosxp for recent X-ray cases. Window widens automatically if
+      // the previous run(s) failed, so a transient DB blip doesn't cause
+      // cases to be silently skipped.
+      const lookbackMinutes = computeLookbackMinutes();
+      const xrayRows = await queryHos(this.buildXraySql(lookbackMinutes));
       const xrayCases = toXrayCases(xrayRows);
 
       totalCasesFound = xrayCases.length;
       console.log(
-        `📊 [XrayService] Found ${totalCasesFound} X-ray cases in last 5 minutes`,
+        `📊 [XrayService] Found ${totalCasesFound} X-ray cases in last ${lookbackMinutes} minute(s)`,
       );
+
+      // Query succeeded — mark this instant as the new baseline for the
+      // next run's lookback calculation.
+      lastSuccessfulCheckAt = new Date();
 
       if (totalCasesFound === 0) {
         accumulateDailyStats({

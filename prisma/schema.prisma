@@ -15,11 +15,24 @@ enum NotificationStatus {
   SENT
 }
 
+enum JobRunStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 model XrayPortableCursor {
   jobName       String   @id @map("job_name") @db.VarChar(64)
   lastXn        BigInt   @map("last_xn")
   initializedAt DateTime @default(now()) @map("initialized_at") @db.DateTime(3)
   updatedAt     DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+  lastRunAt     DateTime? @map("last_run_at") @db.DateTime(3)
+  lastRunStatus JobRunStatus? @map("last_run_status")
+  lastRunDurationMs Int? @map("last_run_duration_ms")
+  lastRunError  String? @map("last_run_error") @db.VarChar(500)
+  lastRunQueued Int? @map("last_run_queued")
+  lastRunSent   Int? @map("last_run_sent")
+  lastRunFailed Int? @map("last_run_failed")
 
   @@map("xray_portable_cursors")
 }

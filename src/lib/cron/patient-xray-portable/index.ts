@@ -29,13 +29,36 @@ async function runPatientXrayPortableCron(): Promise<void> {
 
   isRunning = true;
   const startedAt = Date.now();
+  let heartbeatStarted = false;
 
   try {
+    await PatientXrayPortableService.markRunStarted();
+    heartbeatStarted = true;
     const result = await PatientXrayPortableService.runOnce();
+    const durationMs = Date.now() - startedAt;
+    await PatientXrayPortableService.markRunFinished({
+      status: "SUCCESS",
+      durationMs,
+      result,
+    });
     console.log(
-      `[Cron] patient-xray-portable completed | cursor=${result.cursor} | queued=${result.queued} | recovered=${result.recovered} | sent=${result.sent} | failed=${result.failed} | durationMs=${Date.now() - startedAt}`,
+      `[Cron] patient-xray-portable completed | cursor=${result.cursor} | queued=${result.queued} | recovered=${result.recovered} | sent=${result.sent} | failed=${result.failed} | durationMs=${durationMs}`,
     );
   } catch (error) {
+    if (heartbeatStarted) {
+      try {
+        await PatientXrayPortableService.markRunFinished({
+          status: "FAILED",
+          durationMs: Date.now() - startedAt,
+          error,
+        });
+      } catch (heartbeatError) {
+        console.error(
+          "[Cron] patient-xray-portable heartbeat update failed",
+          heartbeatError instanceof Error ? heartbeatError.name : "UnknownError",
+        );
+      }
+    }
     console.error(
       `[Cron] patient-xray-portable failed | durationMs=${Date.now() - startedAt}`,
       error instanceof Error ? error.name : "UnknownError",

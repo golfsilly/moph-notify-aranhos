@@ -58,6 +58,8 @@ export interface PatientXrayPortableRunResult {
   failed: number;
 }
 
+export type PatientXrayPortableRunStatus = "RUNNING" | "SUCCESS" | "FAILED";
+
 function cleanDisplayValue(value: string | null | undefined): string {
   const cleaned = value?.replace(/\s+/g, " ").trim();
   return cleaned || "ไม่ระบุ";
@@ -271,6 +273,44 @@ export class PatientXrayPortableService {
     });
 
     return { initialized: true, cursor: cursor.lastXn.toString() };
+  }
+
+  static async markRunStarted(): Promise<void> {
+    await this.initialize();
+
+    const { prisma } = await import("@/lib/prisma");
+    await prisma.xrayPortableCursor.update({
+      where: { jobName: XRAY_PORTABLE_JOB_NAME },
+      data: {
+        lastRunAt: new Date(),
+        lastRunStatus: "RUNNING",
+        lastRunDurationMs: null,
+        lastRunError: null,
+        lastRunQueued: null,
+        lastRunSent: null,
+        lastRunFailed: null,
+      },
+    });
+  }
+
+  static async markRunFinished(input: {
+    status: Exclude<PatientXrayPortableRunStatus, "RUNNING">;
+    durationMs: number;
+    result?: PatientXrayPortableRunResult;
+    error?: unknown;
+  }): Promise<void> {
+    const { prisma } = await import("@/lib/prisma");
+    await prisma.xrayPortableCursor.update({
+      where: { jobName: XRAY_PORTABLE_JOB_NAME },
+      data: {
+        lastRunStatus: input.status,
+        lastRunDurationMs: input.durationMs,
+        lastRunError: input.error ? toSafeErrorCode(input.error) : null,
+        lastRunQueued: input.result?.queued ?? null,
+        lastRunSent: input.result?.sent ?? null,
+        lastRunFailed: input.result?.failed ?? null,
+      },
+    });
   }
 
   private static async ingestNewEvents(): Promise<{

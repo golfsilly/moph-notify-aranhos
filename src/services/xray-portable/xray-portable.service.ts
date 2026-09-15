@@ -1,20 +1,21 @@
 import { queryHos } from "@/lib/hosdb";
 import {
-  XrayCase,
-  XrayNotificationLogData,
-  XrayNotificationCheckResult,
-} from "@/types/xray-portable.type";
-import { RowDataPacket } from "mysql2";
-import { XrayLineNotifyService } from "./xray-line-notify.service";
-import {
   checkExistingNotifications,
   createNotificationLogBatch,
 } from "@/lib/xraydb";
+import {
+  XrayCase,
+  XrayNotificationCheckResult,
+  XrayNotificationLogData,
+} from "@/types/xray-portable.type";
+import { RowDataPacket } from "mysql2";
+import { XrayLineNotifyService } from "./xray-line-notify.service";
 
 // ======================================================
 // Config
 // ======================================================
-const HOSPITAL_LOGO_URL ="https://aranhos.moph.go.th/images/symbol/logo-aranhos.png";
+const HOSPITAL_LOGO_URL =
+  "https://aranhos.moph.go.th/images/symbol/logo-aranhos.png";
 const HOSPITAL_HEADER_BG_COLOR = "#6B3FA0";
 const HOSPITAL_NAME = "โรงพยาบาลอรัญประเทศ";
 // ======================================================
@@ -78,13 +79,8 @@ function toXrayCases(rows: RowDataPacket[]): XrayCase[] {
     department_name: row.department_name as string,
     xray_list: row.xray_list as string,
     notify_key: row.notify_key as string,
-    // Optional — patient may not be an inpatient / may not have a bed
-    // assigned yet, so these can legitimately be null.
     bedno: hasValue(row.bedno) ? (row.bedno as string) : null,
     an: hasValue(row.an) ? String(row.an) : null,
-    // Prefix + first + last name combined via CONCAT_WS in SQL (skips
-    // NULL parts already), but can still come back empty if the patient
-    // record has no name fields set at all.
     patient_name: hasValue(row.patient_name)
       ? (row.patient_name as string)
       : null,

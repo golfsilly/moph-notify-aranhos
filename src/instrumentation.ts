@@ -6,8 +6,8 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     console.log("🚀 Starting cron jobs");
 
-    // startRentIptStaffCron();
-    // startRentIptInternCron();
+    startRentIptStaffCron();
+    startRentIptInternCron();
     startXrayPortableCron();
   }
 }

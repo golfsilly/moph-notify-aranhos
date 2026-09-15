@@ -14,15 +14,9 @@ import {
 // ======================================================
 // Config
 // ======================================================
-const HOSPITAL_LOGO_URL =
-  "https://aranhos.moph.go.th/images/symbol/logo-aranhos.png";
-
-const HOSPITAL_HEADER_IMAGE_URL =
-  "https://cdns.yellow-idea.com/moph/20250602/moph-flex-header-1.png";
-
-const HOSPITAL_NAME_LINE_1 = "โรงพยาบาล";
-const HOSPITAL_NAME_LINE_2 = "อรัญประเทศ";
-
+const HOSPITAL_LOGO_URL ="https://aranhos.moph.go.th/images/symbol/logo-aranhos.png";
+const HOSPITAL_HEADER_BG_COLOR = "#6B3FA0";
+const HOSPITAL_NAME = "โรงพยาบาลอรัญประเทศ";
 // ======================================================
 // Helper Functions
 // ======================================================
@@ -98,21 +92,42 @@ function toXrayCases(rows: RowDataPacket[]): XrayCase[] {
 }
 
 /**
- * Split the raw comma-separated xray_list into a clean, comma joined
- * one-line string suitable for a single Flex text row (kept short so the
- * bubble doesn't stretch too tall — full detail is still in xray_list).
+ * Split the raw comma-separated xray_list into a clean array of items,
+ * one per exam, for rendering as a bulleted list rather than a single
+ * inline string.
  */
-function formatXrayItemsInline(xrayList: string): string {
+function parseXrayItems(xrayList: string): string[] {
   const items = xrayList
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
 
-  if (items.length === 0) {
-    return "ไม่ระบุรายการ";
-  }
+  return items.length > 0 ? items : ["ไม่ระบุรายการ"];
+}
+function examListBlock(xrayList: string) {
+  const items = parseXrayItems(xrayList);
 
-  return items.join(", ");
+  return {
+    contents: [
+      {
+        align: "start" as const,
+        size: "sm" as const,
+        text: `รายการตรวจ (${items.length})`,
+        type: "text" as const,
+        weight: "bold" as const,
+      },
+      ...items.map((item) => ({
+        align: "start" as const,
+        margin: "sm" as const,
+        size: "sm" as const,
+        text: `${item}`,
+        type: "text" as const,
+        wrap: true,
+      })),
+    ],
+    layout: "vertical" as const,
+    type: "box" as const,
+  };
 }
 
 /**
@@ -148,9 +163,10 @@ function detailRow(label: string, value: string) {
 
 /**
  * Build a LINE Flex Message bubble for one new X-ray case, following the
- * hospital's standard notification template (header banner, rounded
- * title chip, circular hospital logo, hospital name, then a stack of
- * label/value detail rows separated by dividers).
+ * hospital's standard notification template: a solid-color header carrying
+ * the hospital's own logo + name (no generic MOPH/หมอพร้อม banner image),
+ * then a rounded title chip and a stack of label/value detail rows
+ * separated by dividers.
  *
  * Optional fields (patient name, bed number) only get a row when the
  * case actually has that data — no "field: -" placeholders.
@@ -159,7 +175,6 @@ function createXrayAlertMessage(xrayCase: XrayCase): Record<string, unknown> {
   const orderDate = formatThaiShort(xrayCase.order_date);
   const orderTime =
     xrayCase.order_date_time.split(" ")[1]?.substring(0, 5) || "N/A";
-  const itemCount = xrayCase.xray_list.split(",").filter(Boolean).length;
 
   const detailRows: Record<string, unknown>[] = [
     detailRow("XN", String(xrayCase.xn)),
@@ -170,10 +185,7 @@ function createXrayAlertMessage(xrayCase: XrayCase): Record<string, unknown> {
   if (hasValue(xrayCase.patient_name)) {
     detailRows.push(
       { margin: "md", type: "separator" },
-      detailRow(
-        "ผู้ป่วย",
-        `${xrayCase.patient_name} (${xrayCase.age} ปี)`,
-      ),
+      detailRow("ผู้ป่วย", `${xrayCase.patient_name} (${xrayCase.age} ปี)`),
     );
   }
 
@@ -195,10 +207,47 @@ function createXrayAlertMessage(xrayCase: XrayCase): Record<string, unknown> {
     { margin: "md", type: "separator" },
     detailRow("เวลาสั่ง", orderTime),
     { margin: "md", type: "separator" },
-    detailRow(`รายการตรวจ (${itemCount})`, formatXrayItemsInline(xrayCase.xray_list)),
+    examListBlock(xrayCase.xray_list),
   );
 
   const contents = {
+    header: {
+      backgroundColor: HOSPITAL_HEADER_BG_COLOR,
+      contents: [
+        {
+          contents: [
+            {
+              align: "center",
+              aspectMode: "cover",
+              size: "full",
+              type: "image",
+              url: HOSPITAL_LOGO_URL,
+            },
+          ],
+          cornerRadius: "100px",
+          flex: 0,
+          height: "32px",
+          layout: "vertical",
+          type: "box",
+          width: "32px",
+        },
+        {
+          adjustMode: "shrink-to-fit",
+          color: "#FFFFFF",
+          flex: 1,
+          gravity: "center",
+          size: "md",
+          text: HOSPITAL_NAME,
+          type: "text",
+          weight: "bold",
+        },
+      ],
+      alignItems: "center",
+      layout: "horizontal",
+      paddingAll: "12px",
+      spacing: "sm",
+      type: "box",
+    },
     body: {
       contents: [
         {
@@ -221,51 +270,6 @@ function createXrayAlertMessage(xrayCase: XrayCase): Record<string, unknown> {
           paddingEnd: "8px",
           paddingStart: "8px",
           paddingTop: "lg",
-          type: "box",
-        },
-        {
-          contents: [
-            {
-              align: "center",
-              aspectMode: "cover",
-              size: "full",
-              type: "image",
-              url: HOSPITAL_LOGO_URL,
-            },
-          ],
-          cornerRadius: "100px",
-          layout: "vertical",
-          margin: "20px",
-          maxWidth: "72px",
-          offsetStart: "93px",
-          type: "box",
-        },
-        {
-          contents: [
-            {
-              adjustMode: "shrink-to-fit",
-              align: "center",
-              gravity: "center",
-              scaling: true,
-              size: "18px",
-              text: HOSPITAL_NAME_LINE_1,
-              type: "text",
-              weight: "bold",
-            },
-            {
-              adjustMode: "shrink-to-fit",
-              align: "center",
-              gravity: "center",
-              margin: "none",
-              scaling: true,
-              size: "18px",
-              text: HOSPITAL_NAME_LINE_2,
-              type: "text",
-              weight: "bold",
-            },
-          ],
-          layout: "vertical",
-          margin: "sm",
           type: "box",
         },
         {
@@ -296,20 +300,6 @@ function createXrayAlertMessage(xrayCase: XrayCase): Record<string, unknown> {
       layout: "vertical",
       type: "box",
     },
-    header: {
-      contents: [
-        {
-          aspectMode: "cover",
-          aspectRatio: "3120:885",
-          size: "full",
-          type: "image",
-          url: HOSPITAL_HEADER_IMAGE_URL,
-        },
-      ],
-      layout: "vertical",
-      paddingAll: "0px",
-      type: "box",
-    },
     size: "mega",
     type: "bubble",
   };
@@ -322,21 +312,9 @@ function createXrayAlertMessage(xrayCase: XrayCase): Record<string, unknown> {
     type: "flex",
   };
 }
-
 // ======================================================
 // Gap-safe lookback window
 // ======================================================
-// The cron runs every 60 minutes, so a fixed "look back 60 minutes" window
-// normally lines up perfectly. But if a run throws (e.g. a transient HOS
-// connection blip) it queries nothing for that tick — and the *next*
-// successful run would still only look back 60 minutes, silently skipping
-// whatever arrived during the failed window.
-//
-// Instead, we remember when we last *successfully* queried and look back
-// far enough to cover the full gap since then, with a floor (don't look
-// back less than the normal window) and a ceiling (don't accidentally
-// pull hours of data if the service was down for a long time).
-
 const MIN_LOOKBACK_MINUTES = 60;
 const MAX_LOOKBACK_MINUTES = 120;
 
@@ -359,7 +337,6 @@ function computeLookbackMinutes(): number {
     );
     return MAX_LOOKBACK_MINUTES;
   }
-
   return lookback;
 }
 

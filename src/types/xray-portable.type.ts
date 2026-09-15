@@ -19,6 +19,9 @@ export interface XrayCase {
   department_name: string; // Department name
   xray_list: string; // Comma-separated list of X-ray items
   notify_key: string; // MD5 hash unique identifier for this exam
+  bedno: string | null; // Bed number — null if patient has no bed assigned (e.g. OPD)
+  an: string | null; // Admission number — null if patient is not an inpatient
+  patient_name: string | null; // Prefix + first + last name — null if no name on record
 }
 
 /**

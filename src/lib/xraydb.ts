@@ -1,6 +1,6 @@
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from "@/generated/prisma";
+import { PrismaClient } from "@/generated/prisma/client";
 import { XrayNotificationLogData } from "@/types/xray-portable.type";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 // ======================================================
 // Prisma Client - Local Database for Notification Logs
@@ -100,7 +100,7 @@ export async function checkExistingNotifications(
       select: { notify_key: true },
     });
 
-    return records.map((r) => r.notify_key);
+    return records.map((r: { notify_key: any }) => r.notify_key);
   } catch (error) {
     console.error("❌ Error checking existing notifications:", error);
     throw error;

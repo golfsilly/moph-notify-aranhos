@@ -44,7 +44,7 @@ export class XrayLineNotifyService {
     // TODO: currently pointed at the "test" group config until a dedicated
     // xray-portable LINE OA group (its own client-key/secret-key) is set
     // up in ENV.lineNotify. Swap this to ENV.lineNotify.xrayPortable then.
-    const config = ENV.lineNotify.test;
+    const config = ENV.lineNotify.xrayPortable;
     const lineMessage = this.buildLineMessage(message);
 
     for (let i = 1; i <= retry; i++) {

@@ -182,18 +182,10 @@ async function sendCronFailureAlert(
 // ======================================================
 
 export function startXrayPortableCron() {
-  // Runs every 3 minutes: checks for new portable X-ray orders and sends a
-  // per-case LINE alert immediately. No aggregate summary here anymore —
-  // that's handled by the daily cron below.
+  // Runs every 1 minute: checks for new portable X-ray orders and sends a
+  // per-case LINE alert immediately.
   startCron("xray-portable", "*/1 * * * *", async () => {
     const result = await XrayPortableService.checkAndNotifyNewCases();
     console.log(`✅ [Cron] X-ray check completed | ${result.message}`);
-  });
-
-  // Runs once a day at 16:00 (Asia/Bangkok): flushes the accumulated daily
-  // stats as a single consolidated LINE summary, then resets the counters.
-  startCron("xray-portable-daily-summary", "0 16 * * *", async () => {
-    await XrayPortableService.sendDailySummaryAndReset();
-    console.log("✅ [Cron] X-ray daily summary sent");
   });
 }

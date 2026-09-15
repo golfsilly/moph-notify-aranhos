@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ======================================================
+// X-ray Notification Tracking
+// ======================================================
+
+model XrayNotificationLog {
+  id         String   @id @default(cuid())
+  notify_key String   @unique // MD5 hash from xray data - unique per exam
+  xn         String // X-ray order number
+  vn         String // Visit number
+  hn         String // Hospital number
+  age        Int? // Patient age
+  department String? // Department name
+  xray_list  String?  @db.LongText // Comma-separated list of xray items
+  order_date DateTime // Order date from hosxp
+  sent_at    DateTime @default(now()) // When notification was sent to LINE
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([notify_key])
+  @@index([order_date])
+  @@map("xray_notification_log")
+}

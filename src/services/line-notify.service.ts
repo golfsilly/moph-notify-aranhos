@@ -2,6 +2,7 @@ import { ENV } from "@/config/env";
 
 type LineGroup =
   | "test"
+  | "xray-portable"
   | "rent-ipt-staff"
   | "rent-ipt-intern"
   | "digital"

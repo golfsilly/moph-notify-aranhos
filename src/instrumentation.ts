@@ -1,5 +1,6 @@
 import { startRentIptInternCron } from "./lib/cron/rent-ipt/intern";
 import { startRentIptStaffCron } from "./lib/cron/rent-ipt/staff";
+import { startXrayPortableCron } from "./lib/cron/xray-portable";
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
@@ -7,5 +8,6 @@ export async function register() {
 
     startRentIptStaffCron();
     startRentIptInternCron();
+    startXrayPortableCron();
   }
 }

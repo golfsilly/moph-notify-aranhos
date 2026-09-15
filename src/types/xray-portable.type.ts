@@ -8,12 +8,9 @@
  */
 export interface XrayCase {
   xn: number; // X-ray order number
-  vn: string; // Visit number
-  an: string; // Admit number
+  vn: string; // Visit numbe
   hn: string; // Hospital number
   order_date: string; // Order date (YYYY-MM-DD HH:MM:SS format)
-  patient_name: string;
-  bedno: string;
   order_date_time: string; // Full datetime with time
   age: number; // Patient age
   department_name: string; // Department name

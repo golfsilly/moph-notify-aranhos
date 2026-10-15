@@ -152,7 +152,7 @@ export function getCronStatus() {
 // ======================================================
 
 export function startRentIptInternCron() {
-  startCron("rent-ipt-intern", "0 18 * * 1-5", async () => {
+  startCron("rent-ipt-intern", "0 18 * * *", async () => {
     const result = await RentIptInternService.triggerReport();
     console.log(`✅ ส่งรายงานสำเร็จ | Intern: ${result.intern.length}`);
   });

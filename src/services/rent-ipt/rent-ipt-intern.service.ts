@@ -92,7 +92,7 @@ export class RentIptInternService {
     endDate.setDate(endDate.getDate() - 5);
 
     const dateRange: DateRange = {
-      start: "2026-08-01",
+      start: "2026-09-01",
       end: endDate.toISOString().split("T")[0]!,
       today: thaiNow.toISOString().split("T")[0]!,
     };
@@ -135,11 +135,15 @@ export class RentIptInternService {
         dateRange.end,
       );
 
-      const notifySuccess =
-        await LineNotifyService.sendToRentIptIntern(message);
+      const [sentToRentIptIntern, sentToDigitalMission] = await Promise.all([
+        LineNotifyService.sendToRentIptIntern(message),
+        LineNotifyService.sendToDigitalMission(message),
+      ]);
 
       return {
-        success: notifySuccess,
+        success: sentToRentIptIntern && sentToDigitalMission,
+        sentToRentIptIntern,
+        sentToDigitalMission,
         intern,
         dateRange,
         message,

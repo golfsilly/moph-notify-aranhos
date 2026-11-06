@@ -3,6 +3,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactCompiler: true,
   output: "standalone",
+  outputFileTracingIncludes: {
+    // Sharp loads native libraries at runtime; include them for npm and pnpm layouts.
+    "/*": [
+      "node_modules/@img/sharp-*/lib/**/*",
+      "node_modules/.pnpm/@img+sharp-*/node_modules/@img/sharp-*/lib/**/*",
+    ],
+  },
   compress: true,
   poweredByHeader: false,
   typescript: {

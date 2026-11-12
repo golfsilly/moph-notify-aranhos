@@ -1,4 +1,5 @@
 export async function register() {
+  if (process.env.ENABLE_CRON_JOBS === "false") return;
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const [
       { startRentIptInternCron },

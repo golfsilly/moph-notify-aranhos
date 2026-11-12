@@ -1,48 +1,42 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { ENV } from "@/config/env";
+import { XrayCheckInProgressError } from "@/lib/xraydb";
 import { XrayPortableService } from "@/services/xray-portable/xray-portable.service";
 
-/**
- * Manual test endpoint for X-ray notification system
- * GET /api/test/xray-notify
- *
- * Returns the result of checking and notifying new X-ray cases
- * This can be used to manually trigger the notification system
- * without waiting for the scheduled cron job (5 minutes)
- */
-export async function GET() {
+function matchesSecret(actual: string | null, expected: string): boolean {
+  if (!actual || !expected) return false;
+  const a = Buffer.from(actual);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+// This endpoint sends real notifications. GET is deliberately unsupported.
+export async function POST(request: Request) {
+  if (
+    !matchesSecret(request.headers.get("x-cron-token"), ENV.cronToken) ||
+    !matchesSecret(request.headers.get("x-cron-secret"), ENV.cronSecret)
+  ) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    console.log("🧪 [Test] Triggering X-ray notification check manually");
-
     const result = await XrayPortableService.checkAndNotifyNewCases();
-
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          totalCasesFound: result.totalCasesFound,
-          newCasesCount: result.newCases.length,
-          duplicateCasesCount: result.duplicateCases.length,
-          notificationsSent: result.notificationsSent,
-          failedNotifications: result.failedNotifications,
-          message: result.message,
-          timestamp: new Date().toISOString(),
-        },
+    return NextResponse.json({
+      success: result.failedNotifications === 0,
+      data: {
+        totalCasesFound: result.totalCasesFound,
+        newCasesCount: result.newCases.length,
+        duplicateCasesCount: result.duplicateCases.length,
+        notificationsSent: result.notificationsSent,
+        failedNotifications: result.failedNotifications,
       },
-      { status: 200 },
-    );
+    }, { status: result.failedNotifications === 0 ? 200 : 503 });
   } catch (error) {
-    console.error("❌ [Test] X-ray notify test endpoint error:", error);
-
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: errorMessage,
-        timestamp: new Date().toISOString(),
-      },
-      { status: 500 },
-    );
+    if (error instanceof XrayCheckInProgressError) {
+      return NextResponse.json({ success: false, error: "A check is already running" }, { status: 409 });
+    }
+    console.error("[XrayService] Manual check failed:", error);
+    return NextResponse.json({ success: false, error: "Notification check failed" }, { status: 500 });
   }
 }

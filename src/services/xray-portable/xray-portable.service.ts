@@ -1,15 +1,18 @@
 import { queryHos } from "@/lib/hosdb";
 import {
   checkExistingNotifications,
-  createNotificationLogBatch,
+  createNotificationLog,
+  getXrayCheckpoint,
+  saveXrayCheckpoint,
+  withXrayCheckLock,
 } from "@/lib/xraydb";
 import {
   XrayCase,
   XrayNotificationCheckResult,
-  XrayNotificationLogData,
 } from "@/types/xray-portable.type";
 import { RowDataPacket } from "mysql2";
 import { XrayLineNotifyService } from "./xray-line-notify.service";
+import { processXrayCases } from "./process-xray-cases";
 
 // ======================================================
 // Config
@@ -312,28 +315,12 @@ function createXrayAlertMessage(xrayCase: XrayCase): Record<string, unknown> {
 // Gap-safe lookback window
 // ======================================================
 const MIN_LOOKBACK_MINUTES = 60;
-const MAX_LOOKBACK_MINUTES = 120;
-
-let lastSuccessfulCheckAt: Date | null = null;
-
-function computeLookbackMinutes(): number {
-  if (!lastSuccessfulCheckAt) {
-    return MIN_LOOKBACK_MINUTES;
-  }
-
+function computeLookbackMinutes(lastSuccessfulCheckAt: Date): number {
   const elapsedMinutes = Math.ceil(
     (Date.now() - lastSuccessfulCheckAt.getTime()) / 60_000,
   );
 
-  const lookback = Math.max(MIN_LOOKBACK_MINUTES, elapsedMinutes);
-
-  if (lookback > MAX_LOOKBACK_MINUTES) {
-    console.warn(
-      `⚠️ [XrayService] Gap since last successful check is ${elapsedMinutes}min — capping lookback to ${MAX_LOOKBACK_MINUTES}min`,
-    );
-    return MAX_LOOKBACK_MINUTES;
-  }
-  return lookback;
+  return Math.max(MIN_LOOKBACK_MINUTES, elapsedMinutes + 1);
 }
 
 // ======================================================
@@ -341,10 +328,7 @@ function computeLookbackMinutes(): number {
 // ======================================================
 
 export class XrayPortableService {
-  /**
-   * Query X-ray cases from hosxp database with a time window
-   * @param minutesBack How many minutes back to look (default: 5 for 5-min cron)
-   */
+  /** Query X-ray cases from HOSxP, including the persisted checkpoint. */
   private static buildXraySql(minutesBack: number = 60): string {
     return `
     SELECT
@@ -390,135 +374,28 @@ ORDER BY
    * Prevents duplicate notifications by checking Prisma database
    */
   static async checkAndNotifyNewCases(): Promise<XrayNotificationCheckResult> {
-    const startTime = Date.now();
-    let totalCasesFound = 0;
-    let newCasesCount = 0;
-    let duplicateCasesCount = 0;
-    let notificationsSent = 0;
-    let failedNotifications = 0;
-
-    try {
-      // Query hosxp for recent X-ray cases. Window widens automatically if
-      // the previous run(s) failed, so a transient DB blip doesn't cause
-      // cases to be silently skipped.
-      const lookbackMinutes = computeLookbackMinutes();
-      const xrayRows = await queryHos(this.buildXraySql(lookbackMinutes));
-      const xrayCases = toXrayCases(xrayRows);
-
-      totalCasesFound = xrayCases.length;
-      console.log(
-        `📊 [XrayService] Found ${totalCasesFound} X-ray cases in last ${lookbackMinutes} minute(s)`,
-      );
-
-      // Query succeeded — mark this instant as the new baseline for the
-      // next run's lookback calculation.
-      lastSuccessfulCheckAt = new Date();
-
-      if (totalCasesFound === 0) {
-        return {
-          totalCasesFound: 0,
-          newCases: [],
-          duplicateCases: [],
-          notificationsSent: 0,
-          failedNotifications: 0,
-          message: "✅ No new X-ray cases found",
-        };
-      }
-
-      // Get all notify_keys from cases
-      const notifyKeys = xrayCases.map((c) => c.notify_key);
-
-      // Check which cases already exist in our notification log
-      const existingNotifyKeys = await checkExistingNotifications(notifyKeys);
-      const existingNotifyKeysSet = new Set(existingNotifyKeys);
-
-      // Separate new and duplicate cases
-      const newCases = xrayCases.filter(
-        (c) => !existingNotifyKeysSet.has(c.notify_key),
-      );
-      const duplicateCases = xrayCases.filter((c) =>
-        existingNotifyKeysSet.has(c.notify_key),
-      );
-
-      newCasesCount = newCases.length;
-      duplicateCasesCount = duplicateCases.length;
-
-      console.log(
-        `✨ [XrayService] New cases: ${newCasesCount}, Duplicates: ${duplicateCasesCount}`,
-      );
-
-      if (newCasesCount === 0) {
-        return {
-          totalCasesFound,
-          newCases: [],
-          duplicateCases,
-          notificationsSent: 0,
-          failedNotifications: 0,
-          message: `📋 Found ${totalCasesFound} cases but all are duplicates (already notified)`,
-        };
-      }
-
-      // Send notifications for new cases
-      for (const xrayCase of newCases) {
-        try {
-          const message = createXrayAlertMessage(xrayCase);
-          const success = await XrayLineNotifyService.send(message);
-
-          if (success) {
-            notificationsSent++;
-            console.log(
-              `✅ [XrayService] Notification sent for XN: ${xrayCase.xn}`,
-            );
-          } else {
-            failedNotifications++;
-            console.error(
-              `❌ [XrayService] Failed to send notification for XN: ${xrayCase.xn}`,
-            );
-          }
-        } catch (error) {
-          failedNotifications++;
-          console.error(
-            `❌ [XrayService] Error sending notification for XN: ${xrayCase.xn}`,
-            error,
-          );
-        }
-      }
-
-      // Log all new cases to database
-      if (newCasesCount > 0) {
-        const logsToCreate = newCases.map(
-          (xrayCase): XrayNotificationLogData => ({
-            notify_key: xrayCase.notify_key,
-            xn: String(xrayCase.xn),
-            vn: xrayCase.vn,
-            hn: xrayCase.hn,
-            age: xrayCase.age,
-            department: xrayCase.department_name,
-            xray_list: xrayCase.xray_list,
-            order_date: new Date(xrayCase.order_date_time),
-          }),
-        );
-
-        // Batch insert into database
-        const created = await createNotificationLogBatch(logsToCreate);
-
-        console.log(`💾 [XrayService] Logged ${created} cases to database`);
-      }
-
-      const duration = Date.now() - startTime;
-
-      return {
-        totalCasesFound,
-        newCases,
-        duplicateCases,
-        notificationsSent,
-        failedNotifications,
-        message: `✅ Processed ${totalCasesFound} cases | New: ${newCasesCount} | Sent: ${notificationsSent} | Failed: ${failedNotifications} | (${duration}ms)`,
-      };
-    } catch (error) {
-      console.error("❌ [XrayService] checkAndNotifyNewCases Error:", error);
-      throw error;
-    }
+    return withXrayCheckLock(async () => {
+      // Store the initial baseline before querying, including during outages.
+      const checkpoint = await getXrayCheckpoint();
+      const queryStartedAt = new Date();
+      const lookbackMinutes = computeLookbackMinutes(checkpoint);
+      const rows = await queryHos(this.buildXraySql(lookbackMinutes));
+      return processXrayCases(toXrayCases(rows), queryStartedAt, {
+        findExisting: checkExistingNotifications,
+        send: (item) => XrayLineNotifyService.send(createXrayAlertMessage(item)),
+        recordSent: (item) => createNotificationLog({
+          notify_key: item.notify_key,
+          xn: String(item.xn),
+          vn: item.vn,
+          hn: item.hn,
+          age: item.age,
+          department: item.department_name,
+          xray_list: item.xray_list,
+          order_date: new Date(item.order_date_time),
+        }),
+        saveCheckpoint: saveXrayCheckpoint,
+      });
+    });
   }
 
   /**

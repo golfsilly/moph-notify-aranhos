@@ -58,7 +58,7 @@ function startCron(name: string, schedule: string, task: () => Promise<void>) {
           error,
         );
 
-        // await sendCronFailureAlert(name, error, currentFailures);
+        await sendCronFailureAlert(name, error, currentFailures);
       }
     },
     { timezone: "Asia/Bangkok" },
@@ -154,6 +154,9 @@ export function getCronStatus() {
 export function startRentIptInternCron() {
   startCron("rent-ipt-intern", "0 18 * * *", async () => {
     const result = await RentIptInternService.triggerReport();
+    if (!result.success) {
+      throw new Error(`Intern notification failed: intern=${result.sentToRentIptIntern}, digitalMission=${result.sentToDigitalMission}`);
+    }
     console.log(`✅ ส่งรายงานสำเร็จ | Intern: ${result.intern.length}`);
   });
 }

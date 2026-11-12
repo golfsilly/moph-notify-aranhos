@@ -1,10 +1,10 @@
-import { sendRentIptStaff } from "@/app/api/rent-ipt-alert/rent-ipt-staff/route";
+import { RentIptStaffService } from "@/services/rent-ipt/rent-ipt-staff.service";
 
-// This report queries live data and sends notifications; never run it at build time.
+// This report queries live data; never run it at build time.
 export const dynamic = "force-dynamic";
 
 export default async function RentIptAlertPage() {
-  const data = await sendRentIptStaff();
+  const { staff: data } = await RentIptStaffService.getSummary();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 p-6">

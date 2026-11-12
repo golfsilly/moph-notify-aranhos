@@ -58,7 +58,7 @@ function startCron(name: string, schedule: string, task: () => Promise<void>) {
           error,
         );
 
-        // await sendCronFailureAlert(name, error, currentFailures);
+        await sendCronFailureAlert(name, error, currentFailures);
       }
     },
     { timezone: "Asia/Bangkok" },
@@ -154,6 +154,9 @@ export function getCronStatus() {
 export function startRentIptStaffCron() {
   startCron("rent-ipt-staff", "0 18 * * *", async () => {
     const result = await RentIptStaffService.triggerReport();
+    if (!result.success) {
+      throw new Error(`Staff notification failed: staff=${result.sentToRentIptStaff}, digitalMission=${result.sentToDigitalMission}`);
+    }
     console.log(`✅ ส่งรายงานสำเร็จ | Staff: ${result.staff.length}`);
   });
 }

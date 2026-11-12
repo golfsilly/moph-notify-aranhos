@@ -1,6 +1,7 @@
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient } from "@/generated/prisma";
 import { XrayNotificationLogData } from "@/types/xray-portable.type";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import mysql from "mysql2/promise";
 
 // ======================================================
 // Prisma Client - Local Database for Notification Logs
@@ -39,8 +40,7 @@ function createPrismaClient(): PrismaClient {
 
   if (!connectionString) {
     throw new Error(
-      "❌ NOTIFY_DATABASE_URL is not set. Please add it to your .env file, " +
-        'e.g. NOTIFY_DATABASE_URL="mysql://user:password@localhost:3306/moph_notify_aranhos"',
+      "DATABASE_URL is not set. Please add the notification database URL to your environment.",
     );
   }
 
@@ -59,6 +59,60 @@ const prisma = global.__notifyPrisma || createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   global.__notifyPrisma = prisma;
+}
+
+const XRAY_CHECKPOINT = "xray-portable";
+
+export class XrayCheckInProgressError extends Error {
+  constructor() {
+    super("An X-ray notification check is already running");
+  }
+}
+
+// GET_LOCK is held by a dedicated connection until the entire check finishes.
+// This also coordinates separate app processes using the same MySQL server.
+export async function withXrayCheckLock<T>(task: () => Promise<T>): Promise<T> {
+  const connection = await mysql.createConnection({
+    ...parseConnectionString(process.env.DATABASE_URL!),
+    connectTimeout: 10_000,
+  });
+  let locked = false;
+  try {
+    const [rows] = await connection.query<import("mysql2").RowDataPacket[]>(
+      "SELECT GET_LOCK(?, 0) AS acquired",
+      ["moph-notify:xray-portable"],
+    );
+    if (rows[0]?.acquired !== 1) throw new XrayCheckInProgressError();
+    locked = true;
+    return await task();
+  } finally {
+    if (locked) {
+      try {
+        await connection.query("SELECT RELEASE_LOCK(?)", ["moph-notify:xray-portable"]);
+      } finally {
+        await connection.end();
+      }
+    } else {
+      await connection.end();
+    }
+  }
+}
+
+export async function getXrayCheckpoint(): Promise<Date> {
+  const initial = new Date(Date.now() - 60 * 60 * 1000);
+  const checkpoint = await prisma.xrayNotificationCheckpoint.upsert({
+    where: { name: XRAY_CHECKPOINT },
+    create: { name: XRAY_CHECKPOINT, checkedAt: initial },
+    update: {},
+  });
+  return checkpoint.checkedAt;
+}
+
+export async function saveXrayCheckpoint(checkedAt: Date): Promise<void> {
+  await prisma.xrayNotificationCheckpoint.update({
+    where: { name: XRAY_CHECKPOINT },
+    data: { checkedAt },
+  });
 }
 
 // ======================================================
@@ -100,7 +154,7 @@ export async function checkExistingNotifications(
       select: { notify_key: true },
     });
 
-    return records.map((r: { notify_key: any }) => r.notify_key);
+    return records.map((r) => r.notify_key);
   } catch (error) {
     console.error("❌ Error checking existing notifications:", error);
     throw error;

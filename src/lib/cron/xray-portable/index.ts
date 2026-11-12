@@ -1,5 +1,6 @@
 import { LineNotifyService } from "@/services/line-notify.service";
 import { XrayPortableService } from "@/services/xray-portable/xray-portable.service";
+import { XrayCheckInProgressError } from "@/lib/xraydb";
 import cron from "node-cron";
 
 // ======================================================
@@ -14,35 +15,11 @@ const isRunning = new Map<string, boolean>();
 const cooldownUntil = new Map<string, number>();
 
 const FAILURE_THRESHOLD = 3;
-const TASK_TIMEOUT_MS = 60_000; // hard cap so a stuck query can't hold the slot forever
 const COOLDOWN_MS = 2 * 60 * 1000; // pause 2 min after hitting the failure threshold
 
 // ======================================================
 // Helpers
 // ======================================================
-
-function withTimeout<T>(
-  promise: Promise<T>,
-  ms: number,
-  label: string,
-): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error(`Timeout: ${label} exceeded ${ms}ms`)),
-      ms,
-    );
-
-    promise
-      .then((result) => {
-        clearTimeout(timer);
-        resolve(result);
-      })
-      .catch((error) => {
-        clearTimeout(timer);
-        reject(error);
-      });
-  });
-}
 
 // ======================================================
 // Cron Manager
@@ -96,11 +73,15 @@ function startCron(name: string, schedule: string, task: () => Promise<void>) {
       console.log(`🚀 [Cron] ${name} เริ่มทำงาน`);
 
       try {
-        await withTimeout(task(), TASK_TIMEOUT_MS, name);
+        await task();
 
         failureCount.set(name, 0);
         isCritical.set(name, false);
       } catch (error) {
+        if (error instanceof XrayCheckInProgressError) {
+          console.warn(`[Cron] ${name} skipped: another check is running`);
+          return;
+        }
         const duration = Date.now() - startTime;
         const currentFailures = (failureCount.get(name) || 0) + 1;
 
@@ -186,6 +167,9 @@ export function startXrayPortableCron() {
   // per-case LINE alert immediately.
   startCron("xray-portable", "*/1 * * * *", async () => {
     const result = await XrayPortableService.checkAndNotifyNewCases();
+    if (result.failedNotifications > 0) {
+      throw new Error(`X-ray notifications failed: ${result.failedNotifications}`);
+    }
     console.log(`✅ [Cron] X-ray check completed | ${result.message}`);
   });
 }

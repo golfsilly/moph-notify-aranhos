@@ -16,9 +16,7 @@ interface LineNotifyConfig {
 }
 
 export class LineNotifyService {
-  private static failCount = 0;
-  private static isOpen = false;
-  private static lastFailTime = 0;
+  private static readonly failures = new Map<LineGroup, { count: number; lastAt: number }>();
 
   private static readonly CIRCUIT_LIMIT = 5;
   private static readonly RESET_TIME = 60 * 1000;
@@ -68,11 +66,12 @@ export class LineNotifyService {
     message: string,
     retry: number = 3,
   ): Promise<boolean> {
-    if (this.isOpen) {
-      if (Date.now() - this.lastFailTime > this.RESET_TIME) {
-        this.reset();
+    const failure = this.failures.get(group);
+    if (failure && failure.count >= this.CIRCUIT_LIMIT) {
+      if (Date.now() - failure.lastAt > this.RESET_TIME) {
+        this.failures.delete(group);
       } else {
-        console.warn("🚫 Circuit breaker OPEN");
+        console.warn(`🚫 Circuit breaker OPEN for ${group}`);
         return false;
       }
     }
@@ -109,6 +108,7 @@ export class LineNotifyService {
       try {
         const response = await fetch(ENV.lineNotify.endpoint, {
           method: "POST",
+          signal: AbortSignal.timeout(20_000),
           headers: {
             "Content-Type": "application/json",
             "client-key": config.clientKey,
@@ -120,7 +120,7 @@ export class LineNotifyService {
         });
 
         if (response.ok) {
-          this.recordSuccess();
+          this.failures.delete(group);
           return true;
         }
 
@@ -136,23 +136,10 @@ export class LineNotifyService {
       }
     }
 
-    this.recordFailure();
+    this.failures.set(group, {
+      count: (this.failures.get(group)?.count ?? 0) + 1,
+      lastAt: Date.now(),
+    });
     return false;
-  }
-
-  private static recordSuccess(): void {
-    this.failCount = 0;
-    this.isOpen = false;
-  }
-
-  private static recordFailure(): void {
-    this.failCount++;
-    this.lastFailTime = Date.now();
-    if (this.failCount >= this.CIRCUIT_LIMIT) this.isOpen = true;
-  }
-
-  private static reset(): void {
-    this.failCount = 0;
-    this.isOpen = false;
   }
 }

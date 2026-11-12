@@ -41,9 +41,6 @@ export class XrayLineNotifyService {
       }
     }
 
-    // TODO: currently pointed at the "test" group config until a dedicated
-    // xray-portable LINE OA group (its own client-key/secret-key) is set
-    // up in ENV.lineNotify. Swap this to ENV.lineNotify.xrayPortable then.
     const config = ENV.lineNotify.xrayPortable;
     const lineMessage = this.buildLineMessage(message);
 
@@ -51,6 +48,7 @@ export class XrayLineNotifyService {
       try {
         const response = await fetch(ENV.lineNotify.endpoint, {
           method: "POST",
+          signal: AbortSignal.timeout(20_000),
           headers: {
             "Content-Type": "application/json",
             "client-key": config.clientKey,

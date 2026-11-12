@@ -32,3 +32,10 @@ model XrayNotificationLog {
   @@index([order_date])
   @@map("xray_notification_log")
 }
+
+model XrayNotificationCheckpoint {
+  name      String   @id @db.VarChar(191)
+  checkedAt DateTime
+
+  @@map("xray_notification_checkpoint")
+}
